@@ -20,10 +20,9 @@ Our principles are not.
 
 ## Humans remain accountable.
 
-Technology assists.
+Technology augments judgment.
 
-Humans decide.
-
+Humans remain accountable.
 ---
 
 ## Intelligence is measured by decisions.
@@ -156,7 +155,7 @@ When faced with multiple solutions, choose the one that is:
 
 We are not building software.
 
-We are building a Decision Intelligence Platform.
+We are building systems that help people make better decisions.
 
 Everything else is implementation.
 
