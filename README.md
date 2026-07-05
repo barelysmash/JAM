@@ -1,36 +1,104 @@
 # JAM
-JARVIS Architecture Manual
+
+**JARVIS Architecture Manual**
 
 > Part of the **BarelySmash Intelligence Platform**.
 >
 > JAM is the architectural source of truth for JARVIS, Atlas, Friday, RestaurantOS, BarelyTrade, and future systems.
 
-**JARVIS Architecture Manual**
+JAM defines the philosophy, vision, architecture, standards, and terminology that guide every repository in the BarelySmash ecosystem.
 
-JAM is the architectural source of truth for the BarelySmash Intelligence Platform.
+# Reading Guide
 
-It defines the vision, principles, standards, terminology, and architectural decisions that guide every repository in the ecosystem.
+New contributors should read these documents in order.
 
+## Foundations
+
+- [Manifesto](MANIFESTO.md)
+- [Core Values](CORE_VALUES.md)
+- [Motto](MOTTO.md)
+
+---
+
+## Philosophy
+
+- [Cognitive Loop](philosophy/0000-cognitive-loop.md)
+
+---
+
+## Vision
+
+- [System Vision](vision/0000-system-vision.md)
+- [Platform Charter](vision/0001-platform-charter.md)
+
+---
+
+## Architecture
+
+- [Ecosystem](architecture/ecosystem.md)
+- [Reasoning Model](architecture/reasoning-model.md)
+
+---
+
+## Philosophy
+
+The principles that define how intelligence systems reason.
+
+## Vision
+
+What we are building.
+
+## Architecture
+
+How the platform is organized.
+
+## Standards
+
+How we build.
+
+## Reference
+
+Supporting material.
+
+## Standards
+
+- Repository README *(coming soon)*
+- Git Workflow *(coming soon)*
+- Python Standards *(coming soon)*
+- Testing Standards *(coming soon)*
+- Prompt Standards *(coming soon)*
+
+---
+
+## Reference
+
+- Glossary *(coming soon)*
+- ADRs *(coming soon)*
+- RFCs *(coming soon)*
+- Roadmap *(coming soon)*
 ---
 
 # Mission
 
-Create intelligent software that augments human decision-making through specialized intelligence engines coordinated by a single executive orchestrator.
+Build intelligence systems that improve human decision-making through specialized cognition coordinated by JARVIS.
 
 ---
 
 # Ecosystem
 
 ```
+                     Barry
+                       │
+                       ▼
                     JARVIS
              Executive Orchestrator
-                     │
-      ┌──────────────┼──────────────┐
-      │                             │
- Atlas Engine                 Friday Engine
-Operational Intelligence     Trading Intelligence
-      │                             │
-RestaurantOS                 BarelyTrade
+                       │
+        ┌──────────────┼──────────────┐
+        │                             │
+     Atlas                      Friday
+Operational Intelligence   Trading Intelligence
+        │                             │
+ RestaurantOS                BarelyTrade
 ```
 
 ---
@@ -83,14 +151,20 @@ Shared terminology used across every repository.
 
 # Core Principle
 
-> **Engines produce decisions.**
+> Intelligence Systems produce decisions.
 >
-> **Applications present decisions.**
+> Applications present decisions.
 >
-> **JARVIS coordinates decisions.**
+> JARVIS coordinates decisions.
 
 ---
 
 # License
 
 MIT
+
+---
+
+**BarelySmash**
+
+*Observe. Understand. Decide. Learn. Repeat.*
