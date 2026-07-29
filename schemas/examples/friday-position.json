@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0.0",
+  "decision_id": "dec_01J8Z5P3R9TW2K4M8N6QC1V7XB",
+  "source": "friday",
+  "source_version": "0.2.7",
+  "domain": "equities",
+  "category": "friday.position",
+  "priority": "critical",
+  "confidence": 0.64,
+  "summary": "Open a NVDA starter position at the breakout retest, sized to 0.5R.",
+  "rationale": "NVDA cleared the 118.40 level on volume more than double its twenty-day average and is now retesting from above. The setup invalidates cleanly below the breakout level, which keeps risk defined. Confidence is moderate because the move is unconfirmed by sector breadth.",
+  "evidence": [
+    {
+      "observation_id": "obs_01J8Z5P3R9TW2K4M8N6QC1V7XC",
+      "statement": "NVDA closed above the 118.40 resistance level.",
+      "metric": {
+        "name": "close_price",
+        "value": 121.16,
+        "unit": "USD",
+        "delta": 0.031,
+        "period": "P1D"
+      }
+    },
+    {
+      "observation_id": "obs_01J8Z5P3R9TW2K4M8N6QC1V7XD",
+      "statement": "Session volume reached 2.3 times the twenty-day average.",
+      "metric": {
+        "name": "relative_volume",
+        "value": 2.3,
+        "unit": "ratio",
+        "period": "P20D"
+      }
+    }
+  ],
+  "recommendations": [
+    {
+      "recommendation_id": "rec_01J8Z5P3R9TW2K4M8N6QC1V7XF",
+      "statement": "Submit a limit order for a 0.5R starter position at 118.90.",
+      "action_type": "submit_limit_order",
+      "parameters": {
+        "symbol": "NVDA",
+        "side": "buy",
+        "limit_price": 118.9,
+        "risk_units": 0.5,
+        "stop_price": 116.75,
+        "time_in_force": "day"
+      },
+      "reversible": false,
+      "estimated_impact": {
+        "value": 1.8,
+        "unit": "R",
+        "direction": "increase",
+        "horizon": "P10D"
+      }
+    }
+  ],
+  "requires_approval": true,
+  "supersedes": "dec_01J8Z5P3R9TW2K4M8N6QC1V7XA",
+  "tags": ["breakout", "semis"],
+  "created_at": "2026-07-29T13:47:12Z",
+  "expires_at": "2026-07-29T20:00:00Z"
+}

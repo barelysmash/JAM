@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0.0",
+  "decision_id": "dec_01J8Z4K7M2QF9X3B7T5V0N6RCD",
+  "source": "atlas",
+  "source_version": "0.4.1",
+  "domain": "beverage",
+  "category": "atlas.inventory",
+  "priority": "high",
+  "confidence": 0.81,
+  "summary": "Increase Casa Madero inventory by 6 cases ahead of the holiday window.",
+  "rationale": "Casa Madero attachment has risen for four consecutive weeks while on-hand cover has fallen to nine days. The holiday window historically adds roughly a third to weekly volume on this SKU, which would put current stock below cover before the next scheduled order lands.",
+  "evidence": [
+    {
+      "observation_id": "obs_01J8Z4K7M2QF9X3B7T5V0N6RCE",
+      "statement": "Casa Madero units sold rose 12% over the trailing four weeks.",
+      "metric": {
+        "name": "units_sold",
+        "value": 214,
+        "unit": "bottles",
+        "delta": 0.12,
+        "period": "P4W"
+      },
+      "source_ref": "restaurantos://reports/beverage/weekly/2026-W30"
+    },
+    {
+      "observation_id": "obs_01J8Z4K7M2QF9X3B7T5V0N6RCF",
+      "statement": "On-hand cover for Casa Madero fell to nine days.",
+      "metric": {
+        "name": "days_of_cover",
+        "value": 9,
+        "unit": "days",
+        "delta": -0.31,
+        "period": "P4W"
+      }
+    }
+  ],
+  "recommendations": [
+    {
+      "recommendation_id": "rec_01J8Z4K7M2QF9X3B7T5V0N6RCG",
+      "statement": "Raise the next Casa Madero purchase order to 6 cases.",
+      "action_type": "create_purchase_order",
+      "parameters": {
+        "sku": "CM-RES-750",
+        "cases": 6,
+        "vendor_id": "vnd_republic_national"
+      },
+      "reversible": true,
+      "estimated_impact": {
+        "value": 21,
+        "unit": "days",
+        "direction": "increase",
+        "horizon": "P2W"
+      }
+    }
+  ],
+  "requires_approval": true,
+  "tags": ["holiday", "q4", "high-margin"],
+  "created_at": "2026-07-29T14:22:05Z",
+  "expires_at": "2026-08-12T00:00:00Z"
+}
