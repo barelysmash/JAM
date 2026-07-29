@@ -1,0 +1,17 @@
+# Normalize line endings.
+#
+# Everything in this repository is text. Git stores LF and checks out the
+# platform default, so Windows clones still see CRLF locally while the
+# committed bytes stay stable across machines.
+
+* text=auto eol=lf
+
+*.md    text eol=lf
+*.json  text eol=lf
+*.py    text eol=lf
+*.sh    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.txt   text eol=lf
+
+LICENSE text eol=lf
