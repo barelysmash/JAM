@@ -10,6 +10,10 @@ Runs two layers of checks.
                cannot express: the expires_at ordering rule, the approval and
                reversibility rule, and supersedes source and category matching.
 
+  Registry     Membership in glossary/decision-categories.json, including that
+               the category belongs to the emitting engine. The JSON registry
+               and glossary/decision-categories.md must also agree.
+
 Plus a small set of style lints drawn from the spec's summary guidance. Lints
 are warnings by default and become failures under --strict.
 
@@ -45,6 +49,8 @@ except ImportError:
 
 DEFAULT_SCHEMA = "schemas/decision.schema.json"
 DEFAULT_GLOB = "schemas/examples/*.json"
+DEFAULT_REGISTRY = "glossary/decision-categories.json"
+DEFAULT_REGISTRY_DOC = "glossary/decision-categories.md"
 
 HEDGE_WORDS = [
     "consider",
@@ -201,7 +207,97 @@ def check_schema_version(doc: dict, report: Report, schema_id: str) -> None:
         )
 
 
-def validate(paths: list[str], schema_path: str, strict: bool, color: bool) -> int:
+def load_registry(path: str) -> dict[str, dict] | None:
+    """Load the category registry. Returns None if it is absent."""
+    registry_file = Path(path)
+    if not registry_file.exists():
+        return None
+
+    data = json.loads(registry_file.read_text(encoding="utf-8"))
+    return {entry["category"]: entry for entry in data.get("categories", [])}
+
+
+def parse_registry_doc(path: str) -> dict[str, str]:
+    """Pull category and status out of the markdown registry tables."""
+    doc_file = Path(path)
+    if not doc_file.exists():
+        return {}
+
+    found: dict[str, str] = {}
+    row = re.compile(r"^\|\s*`([a-z]+\.[a-z0-9_]+)`\s*\|\s*`(\w+)`\s*\|")
+    for line in doc_file.read_text(encoding="utf-8").splitlines():
+        match = row.match(line.strip())
+        if match:
+            found[match.group(1)] = match.group(2)
+    return found
+
+
+def check_registry_sync(json_path: str, doc_path: str) -> list[str]:
+    """The markdown registry and the JSON registry must agree."""
+    registry = load_registry(json_path)
+    if registry is None:
+        return []
+
+    documented = parse_registry_doc(doc_path)
+    if not documented:
+        return [
+            f"{doc_path} contains no parseable category rows; "
+            "the registry and its documentation cannot be compared"
+        ]
+
+    problems = []
+    for category in sorted(set(registry) - set(documented)):
+        problems.append(f"{category} is in {json_path} but not documented in {doc_path}")
+    for category in sorted(set(documented) - set(registry)):
+        problems.append(f"{category} is documented in {doc_path} but not in {json_path}")
+    for category in sorted(set(registry) & set(documented)):
+        declared = registry[category].get("status")
+        if declared != documented[category]:
+            problems.append(
+                f"{category} status disagrees: {json_path} says {declared}, "
+                f"{doc_path} says {documented[category]}"
+            )
+    return problems
+
+
+def check_category(doc: dict, report: Report, registry: dict[str, dict] | None) -> None:
+    """category must be registered, active, and owned by the emitting engine."""
+    if registry is None:
+        return
+
+    category = doc.get("category")
+    if not isinstance(category, str):
+        return
+
+    entry = registry.get(category)
+    if entry is None:
+        report.error(
+            f"category {category} is not in the registry; "
+            "add it to glossary/decision-categories.json and its documentation"
+        )
+        return
+
+    if entry.get("status") == "deprecated":
+        replacement = entry.get("superseded_by")
+        tail = f"; use {replacement} instead" if replacement else ""
+        report.warn(f"category {category} is deprecated{tail}")
+
+    engine = entry.get("engine")
+    source = doc.get("source")
+    if engine and source and engine != source:
+        report.error(
+            f"category {category} belongs to {engine} but source is {source}"
+        )
+
+
+def validate(
+    paths: list[str],
+    schema_path: str,
+    registry_path: str | None,
+    registry_doc_path: str,
+    strict: bool,
+    color: bool,
+) -> int:
     def paint(text: str, code: str) -> str:
         return f"{code}{text}{RESET}" if color else text
 
@@ -221,6 +317,33 @@ def validate(paths: list[str], schema_path: str, strict: bool, color: bool) -> i
         return 2
 
     print(f"{paint('schema', DIM)}  {schema_path} is valid draft 2020-12")
+
+    registry: dict[str, dict] | None = None
+    if registry_path:
+        try:
+            registry = load_registry(registry_path)
+        except (json.JSONDecodeError, KeyError, TypeError) as exc:
+            sys.stderr.write(f"error: registry at {registry_path} is unusable: {exc}\n")
+            return 2
+
+        if registry is None:
+            print(
+                f"{paint('registry', DIM)}  {registry_path} not found; "
+                "category membership not enforced"
+            )
+        else:
+            drift = check_registry_sync(registry_path, registry_doc_path)
+            if drift:
+                print(f"{paint('FAIL', RED)}    {registry_path}")
+                for message in drift:
+                    print(f"          {paint('error', RED)} {message}")
+                print()
+                print("registry and documentation disagree")
+                return 1
+            print(
+                f"{paint('registry', DIM)}  {len(registry)} categories, "
+                f"in step with {registry_doc_path}"
+            )
 
     if not paths:
         print(f"{paint('warning', YELLOW)}  no documents matched; nothing to check")
@@ -263,6 +386,7 @@ def validate(paths: list[str], schema_path: str, strict: bool, color: bool) -> i
         check_approval(doc, report)
         check_supersedes(doc, report, index)
         check_schema_version(doc, report, schema_id)
+        check_category(doc, report, registry)
         check_summary_style(doc, report)
         check_rationale_present(doc, report)
 
@@ -321,6 +445,21 @@ def main() -> int:
         help=f"path to the schema (default: {DEFAULT_SCHEMA})",
     )
     parser.add_argument(
+        "--registry",
+        default=DEFAULT_REGISTRY,
+        help=f"path to the category registry (default: {DEFAULT_REGISTRY})",
+    )
+    parser.add_argument(
+        "--registry-doc",
+        default=DEFAULT_REGISTRY_DOC,
+        help=f"path to the registry documentation (default: {DEFAULT_REGISTRY_DOC})",
+    )
+    parser.add_argument(
+        "--no-registry",
+        action="store_true",
+        help="skip category registry enforcement entirely",
+    )
+    parser.add_argument(
         "--strict",
         action="store_true",
         help="treat warnings as failures",
@@ -335,7 +474,16 @@ def main() -> int:
     paths = args.paths or sorted(glob.glob(DEFAULT_GLOB))
     color = sys.stdout.isatty() and not args.no_color
 
-    return validate(paths, args.schema, args.strict, color)
+    registry_path = None if args.no_registry else args.registry
+
+    return validate(
+        paths,
+        args.schema,
+        registry_path,
+        args.registry_doc,
+        args.strict,
+        color,
+    )
 
 
 if __name__ == "__main__":

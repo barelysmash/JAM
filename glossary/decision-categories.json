@@ -1,0 +1,120 @@
+{
+  "registry_version": "1.0.0",
+  "spec": "architecture/decision-object.md",
+  "documentation": "glossary/decision-categories.md",
+  "description": "Authoritative registry of Decision category values. Enforced by scripts/validate_schemas.py. Categories are never removed; retired ones move to deprecated.",
+  "categories": [
+    {
+      "category": "atlas.inventory",
+      "engine": "atlas",
+      "status": "active",
+      "since_version": "1.0.0",
+      "definition": "Stock levels, order quantities, and par adjustments.",
+      "typical_action_types": ["create_purchase_order", "adjust_par_level"]
+    },
+    {
+      "category": "atlas.pricing",
+      "engine": "atlas",
+      "status": "active",
+      "since_version": "1.0.0",
+      "definition": "Changes to the price of an item already offered.",
+      "typical_action_types": ["update_item_price"]
+    },
+    {
+      "category": "atlas.menu",
+      "engine": "atlas",
+      "status": "active",
+      "since_version": "1.0.0",
+      "definition": "Composition of what is offered: additions, removals, placement.",
+      "typical_action_types": ["add_menu_item", "remove_menu_item", "reorder_menu_section"]
+    },
+    {
+      "category": "atlas.labor",
+      "engine": "atlas",
+      "status": "active",
+      "since_version": "1.0.0",
+      "definition": "Scheduling, staffing levels, and role coverage.",
+      "typical_action_types": ["adjust_shift_coverage", "publish_schedule"]
+    },
+    {
+      "category": "atlas.vendor",
+      "engine": "atlas",
+      "status": "active",
+      "since_version": "1.0.0",
+      "definition": "Supplier selection, terms, and substitution.",
+      "typical_action_types": ["request_vendor_quote", "switch_vendor"]
+    },
+    {
+      "category": "atlas.maintenance",
+      "engine": "atlas",
+      "status": "active",
+      "since_version": "1.0.0",
+      "definition": "Equipment service, repair, and replacement.",
+      "typical_action_types": ["schedule_service", "create_work_order"]
+    },
+    {
+      "category": "atlas.marketing",
+      "engine": "atlas",
+      "status": "active",
+      "since_version": "1.0.0",
+      "definition": "Promotions, campaigns, and sampling programs.",
+      "typical_action_types": ["launch_promotion", "schedule_campaign"]
+    },
+    {
+      "category": "atlas.compliance",
+      "engine": "atlas",
+      "status": "active",
+      "since_version": "1.0.0",
+      "definition": "Regulatory obligations, licensing, and filings.",
+      "typical_action_types": ["file_report", "renew_license"]
+    },
+    {
+      "category": "friday.position",
+      "engine": "friday",
+      "status": "active",
+      "since_version": "1.0.0",
+      "definition": "Opening or adding to a position in a specific instrument.",
+      "typical_action_types": ["submit_limit_order", "submit_market_order"]
+    },
+    {
+      "category": "friday.exit",
+      "engine": "friday",
+      "status": "active",
+      "since_version": "1.0.0",
+      "definition": "Managing an existing position: stops, targets, and trims.",
+      "typical_action_types": ["move_stop", "submit_limit_order", "close_position"]
+    },
+    {
+      "category": "friday.risk",
+      "engine": "friday",
+      "status": "active",
+      "since_version": "1.0.0",
+      "definition": "Portfolio-level risk posture and exposure limits.",
+      "typical_action_types": ["set_exposure_limit", "reduce_gross_exposure"]
+    },
+    {
+      "category": "friday.allocation",
+      "engine": "friday",
+      "status": "active",
+      "since_version": "1.0.0",
+      "definition": "Distribution of capital across strategies or sectors.",
+      "typical_action_types": ["rebalance_allocation"]
+    },
+    {
+      "category": "friday.hedge",
+      "engine": "friday",
+      "status": "active",
+      "since_version": "1.0.0",
+      "definition": "Protective overlays against identified exposure.",
+      "typical_action_types": ["open_hedge", "close_hedge"]
+    },
+    {
+      "category": "friday.watchlist",
+      "engine": "friday",
+      "status": "active",
+      "since_version": "1.0.0",
+      "definition": "Candidates to monitor that are not yet actionable.",
+      "typical_action_types": ["add_to_watchlist", "remove_from_watchlist"]
+    }
+  ]
+}
