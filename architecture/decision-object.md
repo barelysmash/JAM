@@ -66,8 +66,8 @@ JARVIS.
 This mirrors the existing rule that Events are immutable, and it keeps engines
 free of downstream concerns.
 
-> This is the one design choice here worth an ADR. It is recorded as
-> ADR-0001 (Decision Immutability) when the `adr/` directory lands.
+> The reasoning behind this choice, and the alternatives that were rejected
+> along the way, are recorded in [ADR-0001](../adr/0001-decision-immutability.md).
 
 ---
 
