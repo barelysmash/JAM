@@ -1,0 +1,23 @@
+# Local scaffolding.
+# One-shot scripts used to apply a change and then discarded. They are run
+# from the repository root and are not part of the manual.
+apply-*.sh
+
+# Python artifacts from scripts/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editors
+.idea/
+.vscode/
+*.swp
+
+# Operating systems
+.DS_Store
+Thumbs.db
+desktop.ini
