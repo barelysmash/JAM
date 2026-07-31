@@ -37,6 +37,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 try:
     from jsonschema import Draft202012Validator, FormatChecker
@@ -45,7 +46,10 @@ except ImportError:
         "error: the jsonschema package is required\n"
         "       install it with: python -m pip install jsonschema\n"
     )
-    raise SystemExit(2)
+    raise SystemExit(2) from None
+
+# A parsed JSON object. The schema constrains the shape; the type does not.
+JsonDict = dict[str, Any]
 
 DEFAULT_SCHEMA = "schemas/decision.schema.json"
 DEFAULT_GLOB = "schemas/examples/*.json"
@@ -104,7 +108,7 @@ def parse_timestamp(value: str) -> datetime | None:
         return None
 
 
-def check_expiry(doc: dict, report: Report) -> None:
+def check_expiry(doc: JsonDict, report: Report) -> None:
     """expires_at must be later than created_at."""
     if "expires_at" not in doc:
         return
@@ -121,7 +125,7 @@ def check_expiry(doc: dict, report: Report) -> None:
         )
 
 
-def check_approval(doc: dict, report: Report) -> None:
+def check_approval(doc: JsonDict, report: Report) -> None:
     """requires_approval may be false only if every recommendation is reversible."""
     if doc.get("requires_approval", True):
         return
@@ -138,7 +142,7 @@ def check_approval(doc: dict, report: Report) -> None:
         )
 
 
-def check_supersedes(doc: dict, report: Report, index: dict[str, dict]) -> None:
+def check_supersedes(doc: JsonDict, report: Report, index: dict[str, JsonDict]) -> None:
     """A superseding Decision must share source and category with its predecessor."""
     target_id = doc.get("supersedes")
     if not target_id:
@@ -168,7 +172,7 @@ def check_supersedes(doc: dict, report: Report, index: dict[str, dict]) -> None:
         )
 
 
-def check_summary_style(doc: dict, report: Report) -> None:
+def check_summary_style(doc: JsonDict, report: Report) -> None:
     """The spec asks for imperative summaries with no hedging."""
     summary = doc.get("summary", "")
     found = [
@@ -183,7 +187,7 @@ def check_summary_style(doc: dict, report: Report) -> None:
         )
 
 
-def check_rationale_present(doc: dict, report: Report) -> None:
+def check_rationale_present(doc: JsonDict, report: Report) -> None:
     """rationale is strongly expected for critical and high priority."""
     if doc.get("priority") in {"critical", "high"} and not doc.get("rationale"):
         report.warn(
@@ -192,7 +196,7 @@ def check_rationale_present(doc: dict, report: Report) -> None:
         )
 
 
-def check_schema_version(doc: dict, report: Report, schema_id: str) -> None:
+def check_schema_version(doc: JsonDict, report: Report, schema_id: str) -> None:
     """The document's major version must match the schema's."""
     match = re.search(r"/decision/(\d+)\.\d+\.\d+/", schema_id)
     if not match:
@@ -207,7 +211,7 @@ def check_schema_version(doc: dict, report: Report, schema_id: str) -> None:
         )
 
 
-def load_registry(path: str) -> dict[str, dict] | None:
+def load_registry(path: str) -> dict[str, JsonDict] | None:
     """Load the category registry. Returns None if it is absent."""
     registry_file = Path(path)
     if not registry_file.exists():
@@ -247,9 +251,13 @@ def check_registry_sync(json_path: str, doc_path: str) -> list[str]:
 
     problems = []
     for category in sorted(set(registry) - set(documented)):
-        problems.append(f"{category} is in {json_path} but not documented in {doc_path}")
+        problems.append(
+            f"{category} is in {json_path} but not documented in {doc_path}"
+        )
     for category in sorted(set(documented) - set(registry)):
-        problems.append(f"{category} is documented in {doc_path} but not in {json_path}")
+        problems.append(
+            f"{category} is documented in {doc_path} but not in {json_path}"
+        )
     for category in sorted(set(registry) & set(documented)):
         declared = registry[category].get("status")
         if declared != documented[category]:
@@ -260,7 +268,9 @@ def check_registry_sync(json_path: str, doc_path: str) -> list[str]:
     return problems
 
 
-def check_category(doc: dict, report: Report, registry: dict[str, dict] | None) -> None:
+def check_category(
+    doc: JsonDict, report: Report, registry: dict[str, JsonDict] | None
+) -> None:
     """category must be registered, active, and owned by the emitting engine."""
     if registry is None:
         return
@@ -285,9 +295,7 @@ def check_category(doc: dict, report: Report, registry: dict[str, dict] | None) 
     engine = entry.get("engine")
     source = doc.get("source")
     if engine and source and engine != source:
-        report.error(
-            f"category {category} belongs to {engine} but source is {source}"
-        )
+        report.error(f"category {category} belongs to {engine} but source is {source}")
 
 
 def validate(
@@ -318,7 +326,7 @@ def validate(
 
     print(f"{paint('schema', DIM)}  {schema_path} is valid draft 2020-12")
 
-    registry: dict[str, dict] | None = None
+    registry: dict[str, JsonDict] | None = None
     if registry_path:
         try:
             registry = load_registry(registry_path)
@@ -352,9 +360,9 @@ def validate(
     validator = Draft202012Validator(schema, format_checker=FormatChecker())
     schema_id = schema.get("$id", "")
 
-    documents: dict[str, dict] = {}
+    documents: dict[str, JsonDict] = {}
     reports: list[Report] = []
-    index: dict[str, dict] = {}
+    index: dict[str, JsonDict] = {}
 
     for path in paths:
         report = Report(path)
