@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "state_id": "dst_01J8ZB4M7XQK2N5R9T3V6W8YCD",
+  "decision_id": "dec_01J8Z4K7M2QF9X3B7T5V0N6RCD",
+  "consumer_id": "restaurantos",
+  "consumer_version": "2.1.0",
+  "status": "executed",
+  "status_at": "2026-07-29T16:04:11Z",
+  "actor": { "type": "human", "id": "usr_bgamache" },
+  "recommendation_id": "rec_01J8Z4K7M2QF9X3B7T5V0N6RCG",
+  "action_ref": "po_2026_07_1841",
+  "created_at": "2026-07-29T16:04:11Z"
+}
