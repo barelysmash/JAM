@@ -73,9 +73,17 @@ a test that fails when the network does, and a schema that updates silently
 turns an unrelated CI run red for reasons nobody asked for. Refreshing the
 vendored copy is a deliberate act with its own commit.
 
-> **Open:** JAM does not publish tagged releases yet. When it does, the
-> vendored copy should become a pinned dependency and this section should be
-> revised.
+Record which JAM release the copy came from:
+
+```
+tests/contracts/decision.schema.json
+tests/contracts/VERSION              # jam v1.0.0
+```
+
+Refreshing is a deliberate act: bump to a later release, run the contract test,
+and commit the schema and the version note together. A vendored schema whose
+provenance is unrecorded is worse than no pin at all, because it looks
+intentional.
 
 ---
 
