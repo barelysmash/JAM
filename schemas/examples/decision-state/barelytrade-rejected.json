@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "state_id": "dst_01J8ZB6P2RTW4K7M9N3QC5V8XB",
+  "decision_id": "dec_01J8Z5P3R9TW2K4M8N6QC1V7XB",
+  "consumer_id": "barelytrade",
+  "consumer_version": "1.4.0",
+  "status": "rejected",
+  "status_at": "2026-07-29T13:58:02Z",
+  "actor": { "type": "human", "id": "usr_bgamache" },
+  "reason": "Sector breadth did not confirm the breakout; sitting this one out.",
+  "created_at": "2026-07-29T13:58:02Z"
+}

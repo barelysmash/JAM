@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://barelysmash.dev/schemas/decision-state/1.0.0/decision-state.schema.json",
+  "title": "DecisionState",
+  "description": "What a consumer did about a Decision. Specified in architecture/decision-state.md. Owned per consumer, keyed by (decision_id, consumer_id).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "state_id",
+    "decision_id",
+    "consumer_id",
+    "consumer_version",
+    "status",
+    "status_at",
+    "actor",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Semver of the DecisionState specification this record conforms to.",
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "state_id": {
+      "description": "Globally unique identifier. 'dst_' followed by a 26-character ULID.",
+      "type": "string",
+      "pattern": "^dst_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "decision_id": {
+      "description": "The Decision this record concerns.",
+      "type": "string",
+      "pattern": "^dec_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "consumer_id": {
+      "description": "The consumer whose stream this belongs to. Engines are not consumers.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "maxLength": 64
+    },
+    "consumer_version": {
+      "description": "Semver of the consumer build that wrote this record.",
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "status": {
+      "description": "Lifecycle state. Transitions are constrained; see the specification.",
+      "type": "string",
+      "enum": ["surfaced", "accepted", "rejected", "executed", "failed", "expired"]
+    },
+    "status_at": {
+      "description": "When the transition happened. RFC 3339, UTC, Z suffix.",
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "actor": {
+      "description": "Who caused the transition.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "enum": ["human", "system"] },
+        "id": { "type": "string", "maxLength": 128 }
+      }
+    },
+    "recommendation_id": {
+      "description": "Which recommendation was acted on. Required when status is executed.",
+      "type": "string",
+      "pattern": "^rec_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "action_ref": {
+      "description": "Reference to the Action carried out. Required when status is executed.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "reason": {
+      "description": "Why. Required when status is rejected or failed.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "metadata": {
+      "description": "Consumer-specific context. Nothing may depend on it for correctness.",
+      "type": "object"
+    },
+    "created_at": {
+      "description": "When this record was written. RFC 3339, UTC, Z suffix.",
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "executed" } }, "required": ["status"] },
+      "then": { "required": ["recommendation_id", "action_ref"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "rejected" } }, "required": ["status"] },
+      "then": { "required": ["reason"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "failed" } }, "required": ["status"] },
+      "then": { "required": ["reason"] }
+    }
+  ]
+}

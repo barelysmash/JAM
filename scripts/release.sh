@@ -94,14 +94,21 @@ SCHEMA="schemas/decision.schema.json"
 if [ -f "$SCHEMA" ]; then
   SCHEMA_VERSION="$(grep -o '/decision/[0-9]\+\.[0-9]\+\.[0-9]\+/' "$SCHEMA" \
     | head -1 | tr -d '/' | sed 's/^decision//')"
+  SCHEMA_SERIES="$(printf '%s' "$SCHEMA_VERSION" | cut -d. -f1,2)"
+  TAG_SERIES="$(printf '%s' "$VERSION" | cut -d. -f1,2)"
+
   if [ -z "$SCHEMA_VERSION" ]; then
     sub "could not read a version from the schema \$id; skipping"
-  elif [ "$SCHEMA_VERSION" = "$VERSION" ]; then
-    sub "schema \$id declares $SCHEMA_VERSION, matching the tag"
+  elif [ "$SCHEMA_SERIES" = "$TAG_SERIES" ]; then
+    if [ "$SCHEMA_VERSION" = "$VERSION" ]; then
+      sub "schema \$id declares $SCHEMA_VERSION, matching the tag"
+    else
+      sub "schema \$id declares $SCHEMA_VERSION; $TAG_SERIES series matches, patch release"
+    fi
   else
     die "the schema \$id declares $SCHEMA_VERSION but you are tagging $VERSION;
-       update schemas/decision.schema.json and architecture/decision-object.md,
-       or tag $SCHEMA_VERSION instead"
+       major and minor must match. Update schemas/decision.schema.json and
+       architecture/decision-object.md, or tag within the $SCHEMA_SERIES series"
   fi
 else
   sub "no Decision schema found; skipping"
