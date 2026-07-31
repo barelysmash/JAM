@@ -51,9 +51,9 @@ How we build.
 
 - [Repository README](standards/repository-readme.md)
 - [Git Workflow](standards/git-workflow.md)
-- Python Standards *(coming soon)*
-- Testing Standards *(coming soon)*
-- Prompt Standards *(coming soon)*
+- [Python Standards](standards/python.md)
+- [Testing Standards](standards/testing.md)
+- [Prompt Standards](standards/prompt.md)
 
 ## Reference
 
