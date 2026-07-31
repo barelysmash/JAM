@@ -73,12 +73,17 @@ a test that fails when the network does, and a schema that updates silently
 turns an unrelated CI run red for reasons nobody asked for. Refreshing the
 vendored copy is a deliberate act with its own commit.
 
-Record which JAM release the copy came from:
+Record both the JAM release and the contract version. They are different
+numbers, and only the second one tells you whether your contract changed. See
+[ADR-0003](../adr/0003-independent-schema-versioning.md).
 
 ```
 tests/contracts/decision.schema.json
-tests/contracts/VERSION              # jam v1.0.0
+tests/contracts/VERSION              # jam v1.1.0, decision 1.0.0
 ```
+
+`schemas/manifest.json` in a JAM release maps the release to the contract
+versions it shipped, so the second number can be looked up rather than guessed.
 
 Refreshing is a deliberate act: bump to a later release, run the contract test,
 and commit the schema and the version note together. A vendored schema whose

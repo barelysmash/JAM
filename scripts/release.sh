@@ -90,28 +90,22 @@ sub "commit: $(git rev-parse --short HEAD)"
 
 step "Checking version consistency"
 
-SCHEMA="schemas/decision.schema.json"
-if [ -f "$SCHEMA" ]; then
-  SCHEMA_VERSION="$(grep -o '/decision/[0-9]\+\.[0-9]\+\.[0-9]\+/' "$SCHEMA" \
-    | head -1 | tr -d '/' | sed 's/^decision//')"
-  SCHEMA_SERIES="$(printf '%s' "$SCHEMA_VERSION" | cut -d. -f1,2)"
-  TAG_SERIES="$(printf '%s' "$VERSION" | cut -d. -f1,2)"
+MANIFEST="schemas/manifest.json"
+if [ -f "$MANIFEST" ]; then
+  DECLARED="$(grep -o '"jam_version"[[:space:]]*:[[:space:]]*"[0-9]*\.[0-9]*\.[0-9]*"' "$MANIFEST" \
+    | head -1 | grep -o '[0-9]*\.[0-9]*\.[0-9]*' || true)"
 
-  if [ -z "$SCHEMA_VERSION" ]; then
-    sub "could not read a version from the schema \$id; skipping"
-  elif [ "$SCHEMA_SERIES" = "$TAG_SERIES" ]; then
-    if [ "$SCHEMA_VERSION" = "$VERSION" ]; then
-      sub "schema \$id declares $SCHEMA_VERSION, matching the tag"
-    else
-      sub "schema \$id declares $SCHEMA_VERSION; $TAG_SERIES series matches, patch release"
-    fi
+  if [ -z "$DECLARED" ]; then
+    sub "could not read jam_version from the manifest; skipping"
+  elif [ "$DECLARED" = "$VERSION" ]; then
+    sub "manifest declares JAM $DECLARED, matching the tag"
+    sub "contract versions are checked by scripts/validate_schemas.py in CI"
   else
-    die "the schema \$id declares $SCHEMA_VERSION but you are tagging $VERSION;
-       major and minor must match. Update schemas/decision.schema.json and
-       architecture/decision-object.md, or tag within the $SCHEMA_SERIES series"
+    die "the manifest declares JAM $DECLARED but you are tagging $VERSION;
+       update jam_version in schemas/manifest.json, or tag $DECLARED instead"
   fi
 else
-  sub "no Decision schema found; skipping"
+  sub "no manifest found; skipping"
 fi
 
 # --------------------------------------------------------------------- ci

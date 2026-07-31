@@ -62,6 +62,7 @@ DECISION_GLOB = "schemas/examples/decision/*.json"
 STATE_SCHEMA = "schemas/decision-state.schema.json"
 STATE_GLOB = "schemas/examples/decision-state/*.json"
 
+DEFAULT_MANIFEST = "schemas/manifest.json"
 DEFAULT_REGISTRY = "glossary/decision-categories.json"
 DEFAULT_REGISTRY_DOC = "glossary/decision-categories.md"
 
@@ -113,6 +114,11 @@ class Report:
     def note(self, message: str) -> None:
         """Informational only. Never fails, even under --strict."""
         self.notes.append(message)
+
+
+def normalize(path: str) -> str:
+    """Compare paths separator-insensitively. Windows glob yields backslashes."""
+    return path.replace("\\", "/")
 
 
 def parse_timestamp(value: str) -> datetime | None:
@@ -179,6 +185,66 @@ def check_registry_sync(json_path: str, doc_path: str) -> list[str]:
                 f"{category} status disagrees: {json_path} says {declared}, "
                 f"{doc_path} says {documented[category]}"
             )
+    return problems
+
+
+# ----------------------------------------------------------------- manifest
+
+
+def schema_declared_version(path: str, name: str) -> str | None:
+    """Read the version a schema declares in its $id."""
+    try:
+        schema = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    match = re.search(rf"/{re.escape(name)}/(\d+\.\d+\.\d+)/", schema.get("$id", ""))
+    return match.group(1) if match else None
+
+
+def check_manifest(path: str) -> list[str]:
+    """The manifest and the schemas it describes must agree."""
+    manifest_file = Path(path)
+    if not manifest_file.exists():
+        return []
+
+    try:
+        manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        return [f"{path} is not valid JSON: {exc}"]
+
+    problems: list[str] = []
+    listed: set[str] = set()
+
+    for entry in manifest.get("schemas", []):
+        name = entry.get("name", "<unnamed>")
+        declared = entry.get("version")
+        schema_path = entry.get("path")
+
+        if not schema_path:
+            problems.append(f"{name} has no path in {path}")
+            continue
+
+        listed.add(normalize(schema_path))
+
+        if not Path(schema_path).exists():
+            problems.append(f"{name} points at {schema_path}, which does not exist")
+            continue
+
+        actual = schema_declared_version(schema_path, name)
+        if actual is None:
+            problems.append(
+                f"{schema_path} does not declare a {name} version in its $id"
+            )
+        elif actual != declared:
+            problems.append(
+                f"{name}: {path} says {declared} but {schema_path} declares {actual}"
+            )
+
+    for found in sorted(glob.glob("schemas/*.schema.json")):
+        if normalize(found) not in listed:
+            problems.append(f"{normalize(found)} is not listed in {path}")
+
     return problems
 
 
@@ -482,6 +548,7 @@ def unique_ids(
 
 def validate(
     targets: list[tuple[str, str, list[str]]],
+    manifest_path: str | None,
     registry_path: str | None,
     registry_doc_path: str,
     strict: bool,
@@ -516,6 +583,22 @@ def validate(
                 f"{paint('registry', DIM)}  {len(registry)} categories, "
                 f"in step with {registry_doc_path}"
             )
+
+    if manifest_path:
+        drift = check_manifest(manifest_path)
+        if drift:
+            print(f"{paint('FAIL', RED)}    {manifest_path}")
+            for message in drift:
+                print(f"          {paint('error', RED)} {message}")
+            print()
+            print("the manifest and the schemas disagree")
+            return 1
+        if Path(manifest_path).exists():
+            data = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+            names = ", ".join(
+                f"{e.get('name')} {e.get('version')}" for e in data.get("schemas", [])
+            )
+            print(f"{paint('manifest', DIM)}  JAM {data.get('jam_version')}: {names}")
 
     all_reports: list[Report] = []
     decisions: dict[str, JsonDict] = {}
@@ -619,6 +702,16 @@ def main() -> int:
         help="override the schema for explicitly given paths",
     )
     parser.add_argument(
+        "--manifest",
+        default=DEFAULT_MANIFEST,
+        help=f"path to the release manifest (default: {DEFAULT_MANIFEST})",
+    )
+    parser.add_argument(
+        "--no-manifest",
+        action="store_true",
+        help="skip manifest checking",
+    )
+    parser.add_argument(
         "--registry",
         default=DEFAULT_REGISTRY,
         help=f"path to the category registry (default: {DEFAULT_REGISTRY})",
@@ -649,14 +742,30 @@ def main() -> int:
         targets = [(args.kind, schema, args.paths)]
     else:
         targets = [
-            ("decision", DECISION_SCHEMA, sorted(glob.glob(DECISION_GLOB))),
-            ("decision-state", STATE_SCHEMA, sorted(glob.glob(STATE_GLOB))),
+            (
+                "decision",
+                DECISION_SCHEMA,
+                [normalize(p) for p in sorted(glob.glob(DECISION_GLOB))],
+            ),
+            (
+                "decision-state",
+                STATE_SCHEMA,
+                [normalize(p) for p in sorted(glob.glob(STATE_GLOB))],
+            ),
         ]
 
+    manifest_path = None if args.no_manifest else args.manifest
     registry_path = None if args.no_registry else args.registry
     color = sys.stdout.isatty() and not args.no_color
 
-    return validate(targets, registry_path, args.registry_doc, args.strict, color)
+    return validate(
+        targets,
+        manifest_path,
+        registry_path,
+        args.registry_doc,
+        args.strict,
+        color,
+    )
 
 
 if __name__ == "__main__":
