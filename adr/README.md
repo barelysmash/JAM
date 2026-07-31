@@ -84,6 +84,7 @@ obvious has failed — if it were obvious there would be nothing to record.
 | --- | --- | --- | --- |
 | [0001](0001-decision-immutability.md) | Decision Immutability | `Accepted` | 2026-07-30 |
 | [0002](0002-decision-state-ownership.md) | DecisionState Ownership | `Accepted` | 2026-07-30 |
+| [0003](0003-independent-schema-versioning.md) | Independent Schema Versioning | `Accepted` | 2026-07-30 |
 
 ---
 
