@@ -114,21 +114,45 @@ step "Checking CI"
 if [ "$CI_CHECK" -eq 0 ]; then
   sub "skipped (--no-ci-check)"
 else
-  set +e
-  CONCLUSIONS="$(gh run list --commit "$COMMIT" --json conclusion,name \
-    --jq '.[] | "\(.conclusion) \(.name)"' 2>/dev/null)"
-  rc=$?
-  set -e
+  WAITED=0
+  CI_TIMEOUT="${CI_TIMEOUT:-300}"
 
-  if [ "$rc" -ne 0 ] || [ -z "$CONCLUSIONS" ]; then
-    sub "no runs found for this commit; releasing without that assurance"
-  else
-    printf '%s\n' "$CONCLUSIONS" | sed 's/^/      /'
-    if printf '%s' "$CONCLUSIONS" | grep -qvE '^success '; then
-      die "not every check succeeded on $COMMIT; fix them or pass --no-ci-check"
+  while :; do
+    set +e
+    RUNS="$(gh run list --commit "$COMMIT" --json status,conclusion,name \
+      --jq '.[] | "\(.status)|\(.conclusion)|\(.name)"' 2>/dev/null)"
+    rc=$?
+    set -e
+
+    if [ "$rc" -ne 0 ] || [ -z "$RUNS" ]; then
+      sub "no runs found for this commit; releasing without that assurance"
+      break
     fi
-    sub "all runs succeeded"
-  fi
+
+    PENDING="$(printf '%s\n' "$RUNS" | grep -vc '^completed|' || true)"
+
+    if [ "$PENDING" -eq 0 ]; then
+      printf '%s\n' "$RUNS" | awk -F'|' '{printf "      %-10s %s\n", $2, $3}'
+
+      FAILED="$(printf '%s\n' "$RUNS" \
+        | awk -F'|' '$2 != "success" && $2 != "skipped" && $2 != "neutral"' || true)"
+
+      if [ -n "$FAILED" ]; then
+        die "not every check succeeded on $COMMIT; fix them or pass --no-ci-check"
+      fi
+
+      sub "all runs succeeded"
+      break
+    fi
+
+    if [ "$WAITED" -ge "$CI_TIMEOUT" ]; then
+      die "$PENDING run(s) still going after ${WAITED}s; wait and retry, or pass --no-ci-check"
+    fi
+
+    sub "$PENDING run(s) still going (${WAITED}s)"
+    sleep 10
+    WAITED=$((WAITED + 10))
+  done
 fi
 
 # -------------------------------------------------------------------- tag
