@@ -44,6 +44,7 @@ How the platform is organized.
 - [Ecosystem](architecture/ecosystem.md)
 - [Reasoning Model](architecture/reasoning-model.md)
 - [Decision Object](architecture/decision-object.md)
+- [Decision State](architecture/decision-state.md)
 
 ## Standards
 
