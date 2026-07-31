@@ -14,16 +14,20 @@ It is the canonical architectural reference.
 
 # High-Level Architecture
 
-```text
-                    JARVIS
-              Executive Orchestrator
-                     │
-      ┌──────────────┼──────────────┐
-      │                             │
- Atlas Engine                 Friday Engine
-Operational Intelligence     Trading Intelligence
-      │                             │
-RestaurantOS                 BarelyTrade
+```
+                         JARVIS
+                   Executive Orchestrator
+                            │
+            ┌───────────────┼───────────────┐
+            │                               │
+       Atlas Engine                   Friday Engine
+ Operational Intelligence         Trading Intelligence
+            │                               │
+      RestaurantOS                     BarelyTrade
+
+  ───────────────────────────────────────────────────
+                       Foundation
+        Shared technical capabilities. No business logic.
 ```
 
 ---
