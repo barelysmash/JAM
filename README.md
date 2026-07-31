@@ -49,8 +49,8 @@ How the platform is organized.
 
 How we build.
 
-- Repository README *(coming soon)*
-- Git Workflow *(coming soon)*
+- [Repository README](standards/repository-readme.md)
+- [Git Workflow](standards/git-workflow.md)
 - Python Standards *(coming soon)*
 - Testing Standards *(coming soon)*
 - Prompt Standards *(coming soon)*
@@ -106,11 +106,12 @@ architecture/   System design, responsibilities, and contracts.
 schemas/        Machine-readable contracts, with validating examples.
 glossary/       Shared terminology and controlled vocabularies.
 adr/            Architecture Decision Records.
+standards/      Engineering standards and conventions.
 scripts/        Tooling that enforces what the manual specifies.
 ```
 
-Planned: `standards/` for engineering conventions, `rfc/` for proposals ahead
-of implementation, and `roadmap/` for milestones.
+Planned: `rfc/` for proposals ahead of implementation, and `roadmap/` for
+milestones.
 
 ---
 
