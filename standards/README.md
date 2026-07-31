@@ -21,9 +21,9 @@ recorded in that repository, with a reason.
 | --- | --- | --- |
 | [Repository README](repository-readme.md) | What every repository must document about itself | Convention |
 | [Git Workflow](git-workflow.md) | Branches, commits, pull requests, merges | Convention |
-| Python Standards *(coming soon)* | Language version, tooling, typing, project layout | Tooling |
-| Testing Standards *(coming soon)* | What must be tested, and to what depth | CI |
-| Prompt Standards *(coming soon)* | How prompts are written, versioned, and validated | CI |
+| [Python Standards](python.md) | Language version, tooling, typing, project layout | Tooling |
+| [Testing Standards](testing.md) | What must be tested, and to what depth | CI |
+| [Prompt Standards](prompt.md) | How prompts are written, versioned, and validated | CI |
 
 ---
 
