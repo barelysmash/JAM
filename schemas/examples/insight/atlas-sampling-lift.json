@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0.0",
+  "insight_id": "ins_01J8ZC5N8YRBGA2S3BNXP4FJQC",
+  "source": "atlas",
+  "source_version": "0.4.1",
+  "domain": "beverage",
+  "statement": "Premium sampling is lifting wine attachment on weekend service.",
+  "confidence": 0.74,
+  "method": "cohort_contrast",
+  "evidence": [
+    {
+      "observation_id": "obs_01J8Z4K7M2QF9X3B7T5V0N6RCE",
+      "statement": "Casa Madero units sold rose 12% over the trailing four weeks.",
+      "metric": {
+        "name": "units_sold",
+        "value": 214,
+        "unit": "bottles",
+        "delta": 0.12,
+        "period": "P4W"
+      },
+      "source_ref": "restaurantos://reports/beverage/weekly/2026-W30"
+    },
+    {
+      "observation_id": "obs_01J8Z4K7M2QF9X3B7T5V0N6RCF",
+      "statement": "On-hand cover for Casa Madero fell to nine days.",
+      "metric": {
+        "name": "days_of_cover",
+        "value": 9,
+        "unit": "days",
+        "delta": -0.31,
+        "period": "P4W"
+      }
+    }
+  ],
+  "tags": ["sampling", "weekend"],
+  "created_at": "2026-07-29T14:20:00Z"
+}

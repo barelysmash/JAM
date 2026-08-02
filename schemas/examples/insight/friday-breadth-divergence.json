@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0.0",
+  "insight_id": "ins_01J8ZC7Q3STX5M8P4R6VD2W9YB",
+  "source": "friday",
+  "source_version": "0.2.7",
+  "domain": "equities",
+  "statement": "Semiconductor strength is not confirmed by sector breadth.",
+  "confidence": 0.41,
+  "method": "correlation",
+  "evidence": [
+    {
+      "observation_id": "obs_01J8Z5P3R9TW2K4M8N6QC1V7XD",
+      "statement": "Session volume reached 2.3 times the twenty-day average.",
+      "metric": {
+        "name": "relative_volume",
+        "value": 2.3,
+        "unit": "ratio",
+        "period": "P20D"
+      }
+    }
+  ],
+  "tags": ["semis", "breadth"],
+  "created_at": "2026-07-29T13:40:00Z",
+  "expires_at": "2026-08-05T00:00:00Z"
+}
