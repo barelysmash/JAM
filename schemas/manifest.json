@@ -1,14 +1,22 @@
 {
   "manifest_version": "1.0.0",
-  "jam_version": "1.1.0",
+  "jam_version": "1.2.0",
   "description": "Maps a JAM release to the contract versions it ships. Schemas version independently of the repository; see adr/0003-independent-schema-versioning.md. Enforced by scripts/validate_schemas.py and scripts/release.sh.",
   "schemas": [
     {
       "name": "decision",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "path": "schemas/decision.schema.json",
       "specification": "architecture/decision-object.md",
       "examples": "schemas/examples/decision/",
+      "status": "active"
+    },
+    {
+      "name": "insight",
+      "version": "1.0.0",
+      "path": "schemas/insight.schema.json",
+      "specification": "architecture/insight-object.md",
+      "examples": "schemas/examples/insight/",
       "status": "active"
     },
     {

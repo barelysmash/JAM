@@ -2,9 +2,10 @@
 """
 Validate JAM contract documents against their schemas.
 
-Two document kinds are checked, each against its own schema:
+Three document kinds are checked, each against its own schema:
 
   decision        schemas/examples/decision/*.json
+  insight         schemas/examples/insight/*.json
   decision-state  schemas/examples/decision-state/*.json
 
 Three layers of checking apply.
@@ -59,6 +60,8 @@ JsonDict = dict[str, Any]
 
 DECISION_SCHEMA = "schemas/decision.schema.json"
 DECISION_GLOB = "schemas/examples/decision/*.json"
+INSIGHT_SCHEMA = "schemas/insight.schema.json"
+INSIGHT_GLOB = "schemas/examples/insight/*.json"
 STATE_SCHEMA = "schemas/decision-state.schema.json"
 STATE_GLOB = "schemas/examples/decision-state/*.json"
 
@@ -384,6 +387,102 @@ def check_category(
         report.error(f"category {category} belongs to {engine} but source is {source}")
 
 
+# ------------------------------------------------------------ insight checks
+
+
+def check_insight_expiry(doc: JsonDict, report: Report) -> None:
+    """expires_at must be later than created_at."""
+    if "expires_at" not in doc:
+        return
+
+    created = parse_timestamp(doc.get("created_at", ""))
+    expires = parse_timestamp(doc["expires_at"])
+    if created is None or expires is None:
+        return
+
+    if expires <= created:
+        report.error(
+            f"expires_at ({doc['expires_at']}) is not later than "
+            f"created_at ({doc['created_at']})"
+        )
+
+
+def check_insight_supersedes(
+    doc: JsonDict, report: Report, index: dict[str, JsonDict]
+) -> None:
+    """A superseding Insight must share source and domain with its predecessor."""
+    target_id = doc.get("supersedes")
+    if not target_id:
+        return
+
+    if target_id == doc.get("insight_id"):
+        report.error("supersedes points at the Insight's own insight_id")
+        return
+
+    target = index.get(target_id)
+    if target is None:
+        report.note(
+            f"supersedes {target_id}, which is not among the documents being "
+            "validated; source and domain match cannot be checked here"
+        )
+        return
+
+    for field in ("source", "domain"):
+        if target.get(field) != doc.get(field):
+            report.error(
+                f"supersedes {target_id} but {field} differs "
+                f"({doc.get(field)} vs {target.get(field)})"
+            )
+
+
+def check_statement_style(doc: JsonDict, report: Report) -> None:
+    """An Insight states an interpretation; it does not instruct."""
+    statement = doc.get("statement", "")
+    first = statement.split()[0].lower() if statement.split() else ""
+    imperatives = {
+        "increase",
+        "decrease",
+        "raise",
+        "lower",
+        "extend",
+        "continue",
+        "stop",
+        "open",
+        "close",
+        "add",
+        "remove",
+        "submit",
+        "schedule",
+        "review",
+    }
+    if first in imperatives:
+        report.warn(
+            f"statement opens with {first!r}, which reads as an instruction; "
+            "an Insight is declarative and a Decision is imperative"
+        )
+
+
+def check_derived_from(
+    doc: JsonDict, report: Report, insights: dict[str, JsonDict]
+) -> None:
+    """Where the Insight is available, a Decision must cite it consistently."""
+    for insight_id in doc.get("derived_from", []):
+        insight = insights.get(insight_id)
+        if insight is None:
+            report.note(
+                f"derived_from {insight_id}, which is not among the documents "
+                "being validated; the Insight could not be cross-checked"
+            )
+            continue
+
+        if insight.get("source") != doc.get("source"):
+            report.error(
+                f"derived_from {insight_id}, whose source is "
+                f"{insight.get('source')}, but this Decision's source is "
+                f"{doc.get('source')}"
+            )
+
+
 # ------------------------------------------------------ decision-state checks
 
 
@@ -505,6 +604,7 @@ def check_kind(
     registry: dict[str, JsonDict] | None,
     schema_id: str,
     decisions: dict[str, JsonDict],
+    insights: dict[str, JsonDict],
 ) -> None:
     """Apply the semantic rules for one document kind."""
     if kind == "decision":
@@ -522,6 +622,19 @@ def check_kind(
             check_category(doc, report, registry)
             check_summary_style(doc, report)
             check_rationale_present(doc, report)
+            check_derived_from(doc, report, insights)
+    elif kind == "insight":
+        index = {
+            doc["insight_id"]: doc
+            for doc in documents.values()
+            if isinstance(doc.get("insight_id"), str)
+        }
+        for path, doc in documents.items():
+            report = reports[path]
+            check_insight_expiry(doc, report)
+            check_insight_supersedes(doc, report, index)
+            check_schema_version(doc, report, schema_id)
+            check_statement_style(doc, report)
     else:
         for path, doc in documents.items():
             report = reports[path]
@@ -602,6 +715,7 @@ def validate(
 
     all_reports: list[Report] = []
     decisions: dict[str, JsonDict] = {}
+    insights: dict[str, JsonDict] = {}
 
     for kind, schema_path, paths in targets:
         try:
@@ -637,10 +751,21 @@ def validate(
                 location = "/".join(str(p) for p in error.path) or "<root>"
                 by_path[path].error(f"{location}: {error.message}")
 
-        check_kind(kind, documents, by_path, registry, schema.get("$id", ""), decisions)
-        unique_ids(
-            documents, "decision_id" if kind == "decision" else "state_id", by_path
+        check_kind(
+            kind,
+            documents,
+            by_path,
+            registry,
+            schema.get("$id", ""),
+            decisions,
+            insights,
         )
+        id_field = {
+            "decision": "decision_id",
+            "insight": "insight_id",
+            "decision-state": "state_id",
+        }[kind]
+        unique_ids(documents, id_field, by_path)
 
         if kind == "decision":
             decisions.update(
@@ -648,6 +773,14 @@ def validate(
                     doc["decision_id"]: doc
                     for doc in documents.values()
                     if isinstance(doc.get("decision_id"), str)
+                }
+            )
+        elif kind == "insight":
+            insights.update(
+                {
+                    doc["insight_id"]: doc
+                    for doc in documents.values()
+                    if isinstance(doc.get("insight_id"), str)
                 }
             )
 
@@ -692,7 +825,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--kind",
-        choices=["decision", "decision-state"],
+        choices=["decision", "insight", "decision-state"],
         default="decision",
         help="document kind, when paths are given explicitly",
     )
@@ -736,12 +869,22 @@ def main() -> int:
 
     targets: list[tuple[str, str, list[str]]]
     if args.paths:
-        schema = args.schema or (
-            DECISION_SCHEMA if args.kind == "decision" else STATE_SCHEMA
+        schema = (
+            args.schema
+            or {
+                "decision": DECISION_SCHEMA,
+                "insight": INSIGHT_SCHEMA,
+                "decision-state": STATE_SCHEMA,
+            }[args.kind]
         )
         targets = [(args.kind, schema, args.paths)]
     else:
         targets = [
+            (
+                "insight",
+                INSIGHT_SCHEMA,
+                [normalize(p) for p in sorted(glob.glob(INSIGHT_GLOB))],
+            ),
             (
                 "decision",
                 DECISION_SCHEMA,
