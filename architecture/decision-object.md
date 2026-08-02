@@ -1,6 +1,6 @@
 # Decision Object
 
-Version: 1.0
+Version: 1.1
 
 ---
 
@@ -66,8 +66,8 @@ JARVIS.
 This mirrors the existing rule that Events are immutable, and it keeps engines
 free of downstream concerns.
 
-> The reasoning behind this choice, and the alternatives that were rejected
-> along the way, are recorded in [ADR-0001](../adr/0001-decision-immutability.md).
+> This is the one design choice here worth an ADR. It is recorded as
+> ADR-0001 (Decision Immutability) when the `adr/` directory lands.
 
 ---
 
@@ -90,6 +90,7 @@ Decision
 │   ├── statement
 │   ├── metric
 │   └── source_ref
+├── derived_from[]
 ├── recommendations[]
 │   ├── recommendation_id
 │   ├── statement
@@ -300,6 +301,28 @@ Keeping the structured metric alongside the plain statement lets applications
 render a chart while JARVIS renders a sentence, from one payload.
 
 Required.
+
+---
+
+## derived_from
+
+The Insights this Decision rests on. An array of `insight_id` values.
+
+```json
+"derived_from": ["ins_01J8ZC5N8YRBGA2S3BNXP4FJQC"]
+```
+
+Where `evidence` records what was measured, `derived_from` records what was
+concluded from it. The two answer different questions and a brief that renders
+them identically is misleading.
+
+Every referenced Insight must share this Decision's `source`. An engine does not
+reason from another engine's interpretations.
+
+Optional. An engine that does not model interpretation separately may omit it,
+and Decisions emitted before the field existed remain valid. See
+[the Insight object](insight-object.md) and
+[ADR-0004](../adr/0004-insight-as-a-contract.md).
 
 ---
 
