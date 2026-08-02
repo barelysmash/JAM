@@ -38,6 +38,8 @@ Wine sales increased 12%.
 
 ## Insight
 
+> Specified in [`architecture/insight-object.md`](../architecture/insight-object.md).
+
 An interpretation of one or more observations.
 
 Example
@@ -47,6 +49,8 @@ Premium sampling likely increased wine attachment.
 ---
 
 ## Decision
+
+> Specified in [`architecture/decision-object.md`](../architecture/decision-object.md).
 
 A recommended course of action.
 
