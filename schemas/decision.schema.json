@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://barelysmash.dev/schemas/decision/1.0.0/decision.schema.json",
+  "$id": "https://barelysmash.dev/schemas/decision/1.1.0/decision.schema.json",
   "title": "Decision",
   "description": "The contract between BarelySmash intelligence engines and every downstream consumer. Specified in architecture/decision-object.md.",
   "type": "object",
@@ -33,7 +33,10 @@
     "source": {
       "description": "The engine that produced this Decision. JARVIS is never a valid source.",
       "type": "string",
-      "enum": ["atlas", "friday"]
+      "enum": [
+        "atlas",
+        "friday"
+      ]
     },
     "source_version": {
       "description": "Semver of the engine build that produced this Decision. Required for reproducibility.",
@@ -55,7 +58,12 @@
     "priority": {
       "description": "Cost of acting late. Not magnitude of impact.",
       "type": "string",
-      "enum": ["critical", "high", "medium", "low"]
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low"
+      ]
     },
     "confidence": {
       "description": "Estimated probability that the underlying insight holds. 0.30 is the emission floor.",
@@ -78,13 +86,27 @@
       "description": "The Observations supporting this Decision. A Decision with no evidence is an opinion.",
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/evidenceItem" }
+      "items": {
+        "$ref": "#/$defs/evidenceItem"
+      }
+    },
+    "derived_from": {
+      "description": "The Insights this Decision rests on. Optional; see adr/0004-insight-as-a-contract.md.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^ins_[0-9A-HJKMNP-TV-Z]{26}$"
+      }
     },
     "recommendations": {
       "description": "Proposed courses of action.",
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/recommendation" }
+      "items": {
+        "$ref": "#/$defs/recommendation"
+      }
     },
     "requires_approval": {
       "description": "Whether a human must approve before any Action executes. Defaults to true.",
@@ -123,7 +145,10 @@
     "evidenceItem": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["observation_id", "statement"],
+      "required": [
+        "observation_id",
+        "statement"
+      ],
       "properties": {
         "observation_id": {
           "description": "Trace back to the Observation record. 'obs_' followed by a 26-character ULID.",
@@ -136,7 +161,9 @@
           "minLength": 1,
           "maxLength": 280
         },
-        "metric": { "$ref": "#/$defs/metric" },
+        "metric": {
+          "$ref": "#/$defs/metric"
+        },
         "source_ref": {
           "description": "Pointer to the underlying record, report, or dataset.",
           "type": "string",
@@ -148,15 +175,23 @@
       "description": "Structured form of an observation, so applications can chart what JARVIS narrates.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "value"],
+      "required": [
+        "name",
+        "value"
+      ],
       "properties": {
         "name": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9_]*$",
           "maxLength": 64
         },
-        "value": { "type": "number" },
-        "unit": { "type": "string", "maxLength": 32 },
+        "value": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string",
+          "maxLength": 32
+        },
         "delta": {
           "description": "Change over the stated period, as a fraction. 0.12 is a 12% increase.",
           "type": "number"
@@ -171,7 +206,10 @@
     "recommendation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["recommendation_id", "statement"],
+      "required": [
+        "recommendation_id",
+        "statement"
+      ],
       "properties": {
         "recommendation_id": {
           "type": "string",
@@ -201,13 +239,25 @@
         "estimated_impact": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["value", "direction"],
+          "required": [
+            "value",
+            "direction"
+          ],
           "properties": {
-            "value": { "type": "number" },
-            "unit": { "type": "string", "maxLength": 32 },
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "maxLength": 32
+            },
             "direction": {
               "type": "string",
-              "enum": ["increase", "decrease", "neutral"]
+              "enum": [
+                "increase",
+                "decrease",
+                "neutral"
+              ]
             },
             "horizon": {
               "description": "ISO 8601 duration over which the impact is expected.",
@@ -218,7 +268,9 @@
         }
       },
       "dependentRequired": {
-        "parameters": ["action_type"]
+        "parameters": [
+          "action_type"
+        ]
       }
     }
   }
