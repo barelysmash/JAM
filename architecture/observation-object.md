@@ -59,8 +59,13 @@ The constraint that keeps this from becoming a bucket: **one subject, one
 period, one query.** A nightly job that dumps thirty unrelated metrics into a
 single Observation has violated the spec even though the schema permits it,
 because no single factual `summary` can describe thirty unrelated numbers. The
-validator warns above eight metrics and requires a period when there is more
-than one.
+validator warns above eight metrics and rejects an Observation whose metrics
+declare conflicting periods.
+
+A measurement taken at an instant states no period at all: `observed_at` is
+the period. Several metrics read from one query at one moment are coherent
+without `period_start` and `period_end`, and requiring them would confuse
+*several metrics* with *spans time*.
 
 ## Citing a specific metric
 

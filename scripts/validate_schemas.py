@@ -632,10 +632,15 @@ def check_metric_coherence(doc: JsonDict, report: Report) -> None:
             report.error(f"metric {name} appears more than once")
         seen.add(name)
 
-    if len(metrics) > 1 and "period_start" not in doc:
+    declared = sorted({
+        metric["period"]
+        for metric in metrics
+        if isinstance(metric.get("period"), str)
+    })
+    if len(declared) > 1:
         report.error(
-            f"{len(metrics)} metrics but no period; metrics measured together "
-            "must state the period they cover"
+            "metrics declare different periods (" + ", ".join(declared) + "); "
+            "one Observation covers one period"
         )
 
     if len(metrics) > METRIC_COUNT_WARN:

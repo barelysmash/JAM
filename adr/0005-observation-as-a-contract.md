@@ -73,9 +73,9 @@ deleted in favor of it. The ULID generator added in Atlas `#30` emits a bare
 identifier with no prefix and does not currently conform.
 
 The "one subject, one period, one query" rule is only partly machine-checkable.
-The validator enforces a period when there is more than one metric and warns
-above eight, but a genuinely incoherent grouping under those limits will pass
-and has to be caught in review.
+The validator rejects metrics whose declared periods conflict and warns above
+eight metrics, but a genuinely incoherent grouping under those limits will
+pass and has to be caught in review.
 
 ## Open questions
 
