@@ -632,11 +632,13 @@ def check_metric_coherence(doc: JsonDict, report: Report) -> None:
             report.error(f"metric {name} appears more than once")
         seen.add(name)
 
-    declared = sorted({
-        metric["period"]
-        for metric in metrics
-        if isinstance(metric.get("period"), str)
-    })
+    declared = sorted(
+        {
+            metric["period"]
+            for metric in metrics
+            if isinstance(metric.get("period"), str)
+        }
+    )
     if len(declared) > 1:
         report.error(
             "metrics declare different periods (" + ", ".join(declared) + "); "
