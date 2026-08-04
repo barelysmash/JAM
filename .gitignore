@@ -2,6 +2,8 @@
 # One-shot scripts used to apply a change and then discarded. They are run
 # from the repository root and are not part of the manual.
 apply-*.sh
+repair-*.sh
+fix-*.sh
 
 # Python artifacts from scripts/
 __pycache__/
