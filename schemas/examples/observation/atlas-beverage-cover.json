@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0.0",
+  "observation_id": "obs_01J8Z4K7M2QF9X3B7T5V0N6RCF",
+  "source": "atlas",
+  "source_version": "0.4.1",
+  "domain": "beverage",
+  "subject": "Casa Madero",
+  "summary": "On-hand cover for Casa Madero stood at nine days.",
+  "metrics": [
+    { "name": "days_of_cover", "value": 9, "unit": "days", "delta": -0.31, "period": "P4W" }
+  ],
+  "source_ref": "restaurantos://inventory/beverage/2026-07-29",
+  "observed_at": "2026-07-29T13:05:00Z",
+  "period_start": "2026-07-01T00:00:00Z",
+  "period_end": "2026-07-29T00:00:00Z",
+  "tags": ["wine", "inventory"]
+}

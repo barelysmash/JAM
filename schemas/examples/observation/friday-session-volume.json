@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0.0",
+  "observation_id": "obs_01J8Z5P3R9TW2K4M8N6QC1V7XD",
+  "source": "friday",
+  "source_version": "0.2.7",
+  "domain": "equities",
+  "subject": "SOXX",
+  "summary": "Session volume reached 2.3 times the twenty-day average while advancers led decliners narrowly.",
+  "metrics": [
+    { "name": "relative_volume", "value": 2.3, "unit": "ratio", "period": "P20D" },
+    { "name": "advance_decline_ratio", "value": 1.08, "unit": "ratio" }
+  ],
+  "source_ref": "friday://marketdata/session/2026-07-29",
+  "observed_at": "2026-07-29T13:30:00Z",
+  "tags": ["semis", "volume"]
+}

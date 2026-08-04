@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0.0",
+  "observation_id": "obs_01J8Z4K7M2QF9X3B7T5V0N6RCE",
+  "source": "atlas",
+  "source_version": "0.4.1",
+  "domain": "beverage",
+  "subject": "Casa Madero",
+  "summary": "Casa Madero moved 214 bottles over the trailing four weeks at a 21% wine attachment rate.",
+  "metrics": [
+    { "name": "units_sold", "value": 214, "unit": "bottles", "delta": 0.12, "period": "P4W" },
+    { "name": "wine_attachment", "value": 0.21, "unit": "ratio", "delta": 0.04, "period": "P4W" },
+    { "name": "net_revenue", "value": 8346.5, "unit": "usd", "delta": 0.09, "period": "P4W" }
+  ],
+  "source_ref": "restaurantos://reports/beverage/weekly/2026-W30",
+  "observed_at": "2026-07-29T13:00:00Z",
+  "period_start": "2026-07-01T00:00:00Z",
+  "period_end": "2026-07-29T00:00:00Z",
+  "tags": ["wine", "weekly"]
+}
