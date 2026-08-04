@@ -107,44 +107,47 @@ pr_number_for() {
   gh pr list --head "$1" --state open --json number --jq '.[0].number' 2>/dev/null
 }
 
-# Wait for checks to be registered, then watch them to completion.
+# Watch checks to completion, tolerating the window after a push in which the
+# new head commit has no check runs registered yet.
+#
+# "no checks reported" means not yet, not failed. Treating it as failure is
+# wrong within the grace period and right after it, because a repository with
+# no workflows must not block forever.
 wait_for_checks() {
   local branch="$1"
   local waited=0
   local out rc
 
+  sub "watching checks"
+
   while :; do
     set +e
-    out="$(gh pr checks "$branch" 2>&1)"
+    out="$(gh pr checks "$branch" --watch 2>&1)"
     rc=$?
     set -e
+
+    printf '%s\n' "$out" | sed 's/^/    /'
+
+    if [ "$rc" -eq 0 ]; then
+      sub "checks passed"
+      return 0
+    fi
 
     if printf '%s' "$out" | grep -qi "no checks reported"; then
       if [ "$waited" -ge "$GRACE" ]; then
         sub "no checks reported after ${waited}s; merging without them"
         return 0
       fi
-      sub "waiting for checks to start (${waited}s)"
+      sub "checks have not been registered yet (${waited}s)"
       sleep 5
       waited=$((waited + 5))
       continue
     fi
-    break
-  done
 
-  sub "watching checks"
-  set +e
-  gh pr checks "$branch" --watch
-  rc=$?
-  set -e
-
-  if [ "$rc" -ne 0 ]; then
     say ""
     gh pr checks "$branch" || true
     die "checks did not pass on $branch; nothing was merged"
-  fi
-
-  sub "checks passed"
+  done
 }
 
 # --------------------------------------------------------------------- ship
