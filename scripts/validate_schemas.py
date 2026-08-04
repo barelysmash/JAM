@@ -64,6 +64,8 @@ INSIGHT_SCHEMA = "schemas/insight.schema.json"
 INSIGHT_GLOB = "schemas/examples/insight/*.json"
 STATE_SCHEMA = "schemas/decision-state.schema.json"
 STATE_GLOB = "schemas/examples/decision-state/*.json"
+OBSERVATION_SCHEMA = "schemas/observation.schema.json"
+OBSERVATION_GLOB = "schemas/examples/observation/*.json"
 
 DEFAULT_MANIFEST = "schemas/manifest.json"
 DEFAULT_REGISTRY = "glossary/decision-categories.json"
@@ -344,7 +346,10 @@ def check_rationale_present(doc: JsonDict, report: Report) -> None:
 
 def check_schema_version(doc: JsonDict, report: Report, schema_id: str) -> None:
     """The document's major version must match the schema's."""
-    match = re.search(r"/(?:decision|decision-state)/(\d+)\.\d+\.\d+/", schema_id)
+    match = re.search(
+        r"/(?:decision|decision-state|insight|observation)/(\d+)\.\d+\.\d+/",
+        schema_id,
+    )
     if not match:
         return
 
@@ -576,6 +581,176 @@ def check_state_references(
             )
 
 
+# -------------------------------------------------------- observation checks
+
+CAUSAL_WORDS = [
+    "because",
+    "caused",
+    "driven by",
+    "due to",
+    "indicates",
+    "reflects",
+    "suggests",
+    "thanks to",
+]
+
+METRIC_CROSSCHECK_FIELDS = ("value", "unit", "delta", "period")
+METRIC_COUNT_WARN = 8
+
+
+def check_observation_period(doc: JsonDict, report: Report) -> None:
+    """A measurement cannot be taken before the period it covers has ended."""
+    start = parse_timestamp(doc.get("period_start", ""))
+    end = parse_timestamp(doc.get("period_end", ""))
+    observed = parse_timestamp(doc.get("observed_at", ""))
+
+    if start is not None and end is not None and end <= start:
+        report.error(
+            f"period_end ({doc['period_end']}) is not later than "
+            f"period_start ({doc['period_start']})"
+        )
+
+    if end is not None and observed is not None and observed < end:
+        report.error(
+            f"observed_at ({doc['observed_at']}) is earlier than "
+            f"period_end ({doc['period_end']})"
+        )
+
+
+def check_metric_coherence(doc: JsonDict, report: Report) -> None:
+    """Metrics in one Observation were measured together, over one period."""
+    metrics = doc.get("metrics", [])
+    if not isinstance(metrics, list):
+        return
+
+    seen: set[str] = set()
+    for metric in metrics:
+        name = metric.get("name")
+        if not isinstance(name, str):
+            continue
+        if name in seen:
+            report.error(f"metric {name} appears more than once")
+        seen.add(name)
+
+    declared = sorted(
+        {
+            metric["period"]
+            for metric in metrics
+            if isinstance(metric.get("period"), str)
+        }
+    )
+    if len(declared) > 1:
+        report.error(
+            "metrics declare different periods (" + ", ".join(declared) + "); "
+            "one Observation covers one period"
+        )
+
+    if len(metrics) > METRIC_COUNT_WARN:
+        report.warn(
+            f"{len(metrics)} metrics in one Observation; the spec asks for one "
+            "subject, one period, one query, and a summary that describes them"
+        )
+
+
+def check_observation_summary(doc: JsonDict, report: Report) -> None:
+    """An Observation states what was measured, never why."""
+    summary = doc.get("summary", "")
+    found = [
+        word
+        for word in CAUSAL_WORDS
+        if re.search(rf"\b{re.escape(word)}\b", summary, re.IGNORECASE)
+    ]
+    if found:
+        report.warn(
+            "summary is causal (" + ", ".join(sorted(set(found))) + "); "
+            "an Observation records what was measured and an Insight explains it"
+        )
+
+
+def check_observation_supersedes(
+    doc: JsonDict, report: Report, index: dict[str, JsonDict]
+) -> None:
+    """A correcting Observation must share source and domain with its target."""
+    target_id = doc.get("supersedes")
+    if not target_id:
+        return
+
+    if target_id == doc.get("observation_id"):
+        report.error("supersedes points at the Observation's own observation_id")
+        return
+
+    target = index.get(target_id)
+    if target is None:
+        report.note(
+            f"supersedes {target_id}, which is not among the documents being "
+            "validated; source and domain match cannot be checked here"
+        )
+        return
+
+    for field in ("source", "domain"):
+        if target.get(field) != doc.get(field):
+            report.error(
+                f"supersedes {target_id} but {field} differs "
+                f"({doc.get(field)} vs {target.get(field)})"
+            )
+
+
+def check_evidence_against_observations(
+    doc: JsonDict, report: Report, observations: dict[str, JsonDict]
+) -> None:
+    """An evidence item copies a metric. The copy must match its source."""
+    for item in doc.get("evidence", []):
+        observation_id = item.get("observation_id")
+        if not isinstance(observation_id, str):
+            continue
+
+        observation = observations.get(observation_id)
+        if observation is None:
+            report.note(
+                f"cites {observation_id}, which is not among the documents "
+                "being validated; the metric copy could not be checked"
+            )
+            continue
+
+        if observation.get("source") != doc.get("source"):
+            report.error(
+                f"cites {observation_id}, whose source is "
+                f"{observation.get('source')}, but this document's source is "
+                f"{doc.get('source')}"
+            )
+
+        metric = item.get("metric")
+        if not isinstance(metric, dict):
+            continue
+
+        name = metric.get("name")
+        match = next(
+            (
+                candidate
+                for candidate in observation.get("metrics", [])
+                if candidate.get("name") == name
+            ),
+            None,
+        )
+        if match is None:
+            available = ", ".join(
+                str(candidate.get("name"))
+                for candidate in observation.get("metrics", [])
+            )
+            report.error(
+                f"cites metric {name} of {observation_id}, which has no such "
+                f"metric; it has: {available}"
+            )
+            continue
+
+        for field in METRIC_CROSSCHECK_FIELDS:
+            if field in metric and metric[field] != match.get(field):
+                report.error(
+                    f"{observation_id}/{name}: {field} is {metric[field]} here "
+                    f"but {match.get(field)} on the Observation"
+                )
+
+
 # ------------------------------------------------------------------- driver
 
 
@@ -605,8 +780,24 @@ def check_kind(
     schema_id: str,
     decisions: dict[str, JsonDict],
     insights: dict[str, JsonDict],
+    observations: dict[str, JsonDict],
 ) -> None:
     """Apply the semantic rules for one document kind."""
+    if kind == "observation":
+        index = {
+            doc["observation_id"]: doc
+            for doc in documents.values()
+            if isinstance(doc.get("observation_id"), str)
+        }
+        for path, doc in documents.items():
+            report = reports[path]
+            check_observation_period(doc, report)
+            check_metric_coherence(doc, report)
+            check_observation_summary(doc, report)
+            check_observation_supersedes(doc, report, index)
+            check_schema_version(doc, report, schema_id)
+        return
+
     if kind == "decision":
         index = {
             doc["decision_id"]: doc
@@ -623,6 +814,7 @@ def check_kind(
             check_summary_style(doc, report)
             check_rationale_present(doc, report)
             check_derived_from(doc, report, insights)
+            check_evidence_against_observations(doc, report, observations)
     elif kind == "insight":
         index = {
             doc["insight_id"]: doc
@@ -635,6 +827,7 @@ def check_kind(
             check_insight_supersedes(doc, report, index)
             check_schema_version(doc, report, schema_id)
             check_statement_style(doc, report)
+            check_evidence_against_observations(doc, report, observations)
     else:
         for path, doc in documents.items():
             report = reports[path]
@@ -716,6 +909,7 @@ def validate(
     all_reports: list[Report] = []
     decisions: dict[str, JsonDict] = {}
     insights: dict[str, JsonDict] = {}
+    observations: dict[str, JsonDict] = {}
 
     for kind, schema_path, paths in targets:
         try:
@@ -759,15 +953,25 @@ def validate(
             schema.get("$id", ""),
             decisions,
             insights,
+            observations,
         )
         id_field = {
+            "observation": "observation_id",
             "decision": "decision_id",
             "insight": "insight_id",
             "decision-state": "state_id",
         }[kind]
         unique_ids(documents, id_field, by_path)
 
-        if kind == "decision":
+        if kind == "observation":
+            observations.update(
+                {
+                    doc["observation_id"]: doc
+                    for doc in documents.values()
+                    if isinstance(doc.get("observation_id"), str)
+                }
+            )
+        elif kind == "decision":
             decisions.update(
                 {
                     doc["decision_id"]: doc
@@ -825,7 +1029,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--kind",
-        choices=["decision", "insight", "decision-state"],
+        choices=["observation", "decision", "insight", "decision-state"],
         default="decision",
         help="document kind, when paths are given explicitly",
     )
@@ -872,6 +1076,7 @@ def main() -> int:
         schema = (
             args.schema
             or {
+                "observation": OBSERVATION_SCHEMA,
                 "decision": DECISION_SCHEMA,
                 "insight": INSIGHT_SCHEMA,
                 "decision-state": STATE_SCHEMA,
@@ -880,6 +1085,11 @@ def main() -> int:
         targets = [(args.kind, schema, args.paths)]
     else:
         targets = [
+            (
+                "observation",
+                OBSERVATION_SCHEMA,
+                [normalize(p) for p in sorted(glob.glob(OBSERVATION_GLOB))],
+            ),
             (
                 "insight",
                 INSIGHT_SCHEMA,
