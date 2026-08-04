@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://barelysmash.dev/schemas/observation/1.0.0/observation.schema.json",
+  "title": "Observation",
+  "description": "A measurement event: what was true of one subject over one period, recorded by one engine. Specified in architecture/observation-object.md. See adr/0005-observation-as-a-contract.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "observation_id",
+    "source",
+    "source_version",
+    "domain",
+    "summary",
+    "metrics",
+    "observed_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Semver of the Observation specification this object conforms to.",
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "observation_id": {
+      "description": "Globally unique identifier. 'obs_' followed by a 26-character ULID.",
+      "type": "string",
+      "pattern": "^obs_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "source": {
+      "description": "The engine that recorded this measurement. JARVIS is never a source.",
+      "type": "string",
+      "enum": ["atlas", "friday"]
+    },
+    "source_version": {
+      "description": "Semver of the engine build. Required for reproducibility.",
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "domain": {
+      "description": "Subdomain measured. An Observation has no category.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "maxLength": 64
+    },
+    "subject": {
+      "description": "What was measured, where the domain alone is not specific enough.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "summary": {
+      "description": "What was measured. Factual and declarative, never causal.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 280
+    },
+    "metrics": {
+      "description": "Metrics measured together, of one subject over one period.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": { "$ref": "#/$defs/metric" }
+    },
+    "source_ref": {
+      "description": "Provenance: the query, report, or system this came from.",
+      "type": "string",
+      "maxLength": 512
+    },
+    "observed_at": {
+      "description": "When the measurement was taken. Never earlier than period_end.",
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "period_start": {
+      "description": "Start of the measured period. Required alongside period_end.",
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "period_end": {
+      "description": "End of the measured period. Required alongside period_start.",
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "supersedes": {
+      "description": "The observation_id this corrects. Must share source and domain.",
+      "type": "string",
+      "pattern": "^obs_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "tags": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$", "maxLength": 32 }
+    }
+  },
+  "dependentRequired": {
+    "period_start": ["period_end"],
+    "period_end": ["period_start"]
+  },
+  "$defs": {
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "value"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$", "maxLength": 64 },
+        "value": { "type": "number" },
+        "unit": { "type": "string", "maxLength": 32 },
+        "delta": { "type": "number" },
+        "period": {
+          "type": "string",
+          "pattern": "^P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+S)?)?$"
+        }
+      }
+    }
+  }
+}
