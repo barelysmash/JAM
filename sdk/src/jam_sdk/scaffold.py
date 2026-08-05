@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from shutil import copytree
+from shutil import copytree, ignore_patterns
 from typing import Final
 
 PROJECT_NAME_TOKEN: Final[str] = "{{PROJECT_NAME}}"
@@ -46,7 +46,19 @@ def scaffold_python_engine(
         raise ScaffoldError(f"Destination is not empty: {destination}")
 
     destination.mkdir(parents=True, exist_ok=True)
-    copytree(template, destination, dirs_exist_ok=True)
+    copytree(
+        template,
+        destination,
+        dirs_exist_ok=True,
+        ignore=ignore_patterns(
+            "__pycache__",
+            "*.pyc",
+            "*.pyo",
+            ".pytest_cache",
+            ".mypy_cache",
+            ".ruff_cache",
+        ),
+    )
 
     package_placeholder = destination / "src/package_name"
     package_destination = destination / "src" / request.package_name

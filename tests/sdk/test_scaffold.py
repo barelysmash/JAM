@@ -114,3 +114,45 @@ def test_scaffold_rejects_missing_template(
             ),
             template_root=tmp_path / "missing",
         )
+
+
+def test_scaffold_creates_complete_python_project(
+    tmp_path: Path,
+) -> None:
+    destination = tmp_path / "atlas-demo"
+
+    scaffold_python_engine(
+        ScaffoldRequest(
+            project_name="Atlas Demo",
+            package_name="atlas_demo",
+            platform_role="Operational Intelligence Engine",
+            destination=destination,
+        ),
+        template_root=Path("templates"),
+    )
+
+    expected_files = [
+        ".github/workflows/ci.yml",
+        ".gitignore",
+        "README.md",
+        "pyproject.toml",
+        "docs/adr/ADR-0001-repository-role.md",
+        "src/atlas_demo/__init__.py",
+        "tests/test_package.py",
+    ]
+
+    for relative_path in expected_files:
+        assert (destination / relative_path).is_file()
+
+    for rendered_file in destination.rglob("*"):
+        if not rendered_file.is_file():
+            continue
+
+        try:
+            text = rendered_file.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+
+        assert "{{PROJECT_NAME}}" not in text
+        assert "{{PACKAGE_NAME}}" not in text
+        assert "{{PLATFORM_ROLE}}" not in text
