@@ -19,6 +19,7 @@ recorded in that repository, with a reason.
 
 | Standard | Covers | Enforcement |
 | --- | --- | --- |
+| [JAM Conformance](jam-conformance.md) | Repository alignment with JAM | Convention and CI |
 | [Repository README](repository-readme.md) | What every repository must document about itself | Convention |
 | [Git Workflow](git-workflow.md) | Branches, commits, pull requests, merges | Convention |
 | [Python Standards](python.md) | Language version, tooling, typing, project layout | Tooling |
