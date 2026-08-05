@@ -139,3 +139,35 @@ Foundation never owns business logic.
 > Applications present decisions.
 
 > JARVIS coordinates decisions.
+
+---
+
+## Muse
+
+**Role:** Creative Intelligence Engine
+
+Muse converts ideas into structured creative decisions and production-ready
+creative direction.
+
+Muse owns:
+
+- creative briefing;
+- storytelling;
+- art direction;
+- prompt construction;
+- creative evaluation;
+- typography planning;
+- prepress reasoning;
+- creative artifact preparation.
+
+Muse does not own:
+
+- executive orchestration;
+- trading intelligence;
+- hospitality intelligence;
+- storefront presentation;
+- checkout, inventory, or fulfillment;
+- shared cross-platform infrastructure.
+
+Muse is an independent engine. JARVIS may delegate creative work to Muse
+through versioned contracts, but Muse does not depend on JARVIS internals.
