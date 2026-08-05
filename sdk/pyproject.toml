@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "barelysmash-jam-sdk"
+version = "0.1.0"
+description = "Tooling for creating JAM-conformant repositories."
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.17,<2",
+    "pytest>=8.4,<9",
+    "pytest-cov>=6.2,<7",
+    "ruff>=0.12,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/jam_sdk"]
