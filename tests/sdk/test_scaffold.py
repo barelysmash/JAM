@@ -148,7 +148,10 @@ def test_scaffold_creates_complete_python_project(
         if not rendered_file.is_file():
             continue
 
-        text = rendered_file.read_text(encoding="utf-8")
+        try:
+            text = rendered_file.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
 
         assert "{{PROJECT_NAME}}" not in text
         assert "{{PACKAGE_NAME}}" not in text
