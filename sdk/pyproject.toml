@@ -9,6 +9,10 @@ description = "Tooling for creating JAM-conformant repositories."
 requires-python = ">=3.12"
 dependencies = []
 
+
+[project.scripts]
+jam = "jam_sdk.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "mypy>=1.17,<2",
