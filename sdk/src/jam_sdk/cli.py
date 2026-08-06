@@ -10,6 +10,11 @@ from jam_sdk.doctor import (
     doctor_repository,
     format_doctor_report,
 )
+from jam_sdk.init import (
+    InitError,
+    format_init_report,
+    initialize_repository,
+)
 from jam_sdk.scaffold import (
     ScaffoldError,
     ScaffoldRequest,
@@ -40,29 +45,82 @@ def build_parser() -> argparse.ArgumentParser:
         "new",
         help="Create a repository from a JAM template.",
     )
-    new_parser.add_argument(
-        "project_name",
-        help="Human-readable project name.",
-    )
+    new_parser.add_argument("project_name")
     new_parser.add_argument(
         "--package",
         required=True,
         dest="package_name",
-        help="Lowercase Python package name.",
     )
     new_parser.add_argument(
         "--role",
         required=True,
         dest="platform_role",
-        help="Platform role, such as Creative Intelligence Engine.",
     )
     new_parser.add_argument(
         "--destination",
         required=True,
         type=Path,
-        help="Directory where the repository will be created.",
     )
     new_parser.add_argument(
+        "--template-root",
+        type=Path,
+        default=DEFAULT_TEMPLATE_ROOT,
+        help=argparse.SUPPRESS,
+    )
+
+    init_parser = subcommands.add_parser(
+        "init",
+        help="Adopt JAM in an existing repository.",
+    )
+    init_parser.add_argument(
+        "repository",
+        nargs="?",
+        type=Path,
+        default=Path.cwd(),
+    )
+    init_parser.add_argument("--name", required=True)
+    init_parser.add_argument(
+        "--package",
+        required=True,
+        dest="package_name",
+    )
+    init_parser.add_argument(
+        "--role",
+        required=True,
+        dest="platform_role",
+    )
+    init_parser.add_argument(
+        "--type",
+        choices=(
+            "engine",
+            "application",
+            "foundation",
+            "orchestrator",
+        ),
+        default="engine",
+        dest="repository_type",
+    )
+    init_parser.add_argument(
+        "--scaffold",
+        default="python-engine",
+        dest="scaffold_template",
+    )
+    init_parser.add_argument(
+        "--baseline",
+        action="store_true",
+        help="Add missing CI and .gitignore files.",
+    )
+    init_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show changes without writing files.",
+    )
+    init_parser.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+    )
+    init_parser.add_argument(
         "--template-root",
         type=Path,
         default=DEFAULT_TEMPLATE_ROOT,
@@ -78,13 +136,11 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         type=Path,
         default=Path.cwd(),
-        help="Repository to validate. Defaults to the current directory.",
     )
     validate_parser.add_argument(
         "--json",
         action="store_true",
         dest="json_output",
-        help="Emit machine-readable JSON.",
     )
 
     doctor_parser = subcommands.add_parser(
@@ -96,18 +152,15 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         type=Path,
         default=Path.cwd(),
-        help="Repository to diagnose. Defaults to the current directory.",
     )
     doctor_parser.add_argument(
         "--fix",
         action="store_true",
-        help="Apply deterministic repairs.",
     )
     doctor_parser.add_argument(
         "--json",
         action="store_true",
         dest="json_output",
-        help="Emit machine-readable JSON.",
     )
     doctor_parser.add_argument(
         "--template-root",
@@ -123,6 +176,35 @@ def main(argv: list[str] | None = None) -> int:
     """Run the JAM command-line interface."""
 
     args = build_parser().parse_args(argv)
+
+    if args.command == "init":
+        try:
+            init_report = initialize_repository(
+                args.repository,
+                project_name=args.name,
+                package_name=args.package_name,
+                platform_role=args.platform_role,
+                repository_type=args.repository_type,
+                scaffold_template=args.scaffold_template,
+                template_root=args.template_root,
+                include_baseline=args.baseline,
+                dry_run=args.dry_run,
+            )
+        except InitError as exc:
+            print(f"error: {exc}")
+            return 1
+
+        output = (
+            init_report.to_json()
+            if args.json_output
+            else format_init_report(init_report)
+        )
+        print(output)
+
+        if args.dry_run:
+            return 0
+
+        return 0 if init_report.passed else 1
 
     if args.command == "validate":
         validation_report = validate_repository(args.repository)
