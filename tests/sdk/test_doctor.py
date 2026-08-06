@@ -130,3 +130,45 @@ def test_doctor_report_is_human_readable(
 
     assert "JAM doctor:" in output
     assert "PASS" in output
+
+
+def test_doctor_preserves_conformant_split_workflows(
+    tmp_path: Path,
+) -> None:
+    repository = _create_repository(tmp_path)
+    workflow_directory = repository / ".github/workflows"
+    (workflow_directory / "ci.yml").unlink()
+
+    (workflow_directory / "lint.yml").write_text(
+        """
+name: Lint
+jobs:
+  lint:
+    steps:
+      - run: python -m ruff check .
+      - run: python -m mypy
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    (workflow_directory / "tests.yaml").write_text(
+        """
+name: Tests
+jobs:
+  tests:
+    steps:
+      - run: python -m pytest
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    report = doctor_repository(
+        repository,
+        template_root=Path("templates"),
+        fix=True,
+    )
+
+    assert report.passed is True
+    assert report.actions == ()
+    assert not (workflow_directory / "ci.yml").exists()
