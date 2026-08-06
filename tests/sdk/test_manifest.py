@@ -37,7 +37,9 @@ def test_load_manifest_from_generated_repository(
     assert manifest.repository.role == "Creative Intelligence Engine"
     assert manifest.jam.manual_version == "1.3.0"
     assert manifest.scaffold.template == "python-engine"
+    assert manifest.python.layout == "single-package"
     assert manifest.python.package == "muse_demo"
+    assert manifest.python.packages == ()
 
 
 def test_load_manifest_rejects_missing_file(
@@ -57,4 +59,119 @@ def test_load_manifest_rejects_invalid_manifest(
     )
 
     with pytest.raises(ManifestError, match="Invalid JAM manifest"):
+        load_manifest(tmp_path)
+
+
+def test_load_manifest_accepts_monorepo_layout(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "jam.yaml").write_text(
+        """
+schema_version: "1.0"
+
+repository:
+  name: "Atlas"
+  type: "engine"
+  role: "Operational Intelligence Engine"
+
+jam:
+  manual_version: "1.3.0"
+  conformance_version: "1.0"
+
+scaffold:
+  template: "python-engine"
+  version: "1.0.0"
+
+python:
+  layout: "monorepo"
+  packages:
+    - "packages/atlas-core"
+    - "packages/atlas-events"
+    - "apps/restaurantos"
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    manifest = load_manifest(tmp_path)
+
+    assert manifest.python.layout == "monorepo"
+    assert manifest.python.package is None
+    assert manifest.python.packages == (
+        "packages/atlas-core",
+        "packages/atlas-events",
+        "apps/restaurantos",
+    )
+
+
+def test_load_manifest_rejects_duplicate_monorepo_paths(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "jam.yaml").write_text(
+        """
+schema_version: "1.0"
+
+repository:
+  name: "Atlas"
+  type: "engine"
+  role: "Operational Intelligence Engine"
+
+jam:
+  manual_version: "1.3.0"
+  conformance_version: "1.0"
+
+scaffold:
+  template: "python-engine"
+  version: "1.0.0"
+
+python:
+  layout: "monorepo"
+  packages:
+    - "packages/atlas-core"
+    - "packages/atlas-core"
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ManifestError,
+        match="package paths must be unique",
+    ):
+        load_manifest(tmp_path)
+
+
+def test_load_manifest_rejects_unsafe_monorepo_path(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "jam.yaml").write_text(
+        """
+schema_version: "1.0"
+
+repository:
+  name: "Atlas"
+  type: "engine"
+  role: "Operational Intelligence Engine"
+
+jam:
+  manual_version: "1.3.0"
+  conformance_version: "1.0"
+
+scaffold:
+  template: "python-engine"
+  version: "1.0.0"
+
+python:
+  layout: "monorepo"
+  packages:
+    - "../outside"
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ManifestError,
+        match="safe repository-relative paths",
+    ):
         load_manifest(tmp_path)

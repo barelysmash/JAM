@@ -3,10 +3,16 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    model_validator,
+)
 
 
 class RepositoryIdentity(BaseModel):
@@ -38,11 +44,51 @@ class ScaffoldIdentity(BaseModel):
 
 
 class PythonIdentity(BaseModel):
-    """Python package identity."""
+    """Python layout and package identity."""
 
     model_config = ConfigDict(extra="forbid")
 
-    package: str = Field(min_length=1)
+    layout: Literal["single-package", "monorepo"] = "single-package"
+    package: str | None = None
+    packages: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_layout(self) -> Self:
+        """Validate fields appropriate to the declared layout."""
+
+        if self.layout == "single-package":
+            if self.package is None or not self.package.strip():
+                raise ValueError("single-package layout requires python.package")
+
+            if self.packages:
+                raise ValueError("single-package layout cannot declare python.packages")
+
+            return self
+
+        if self.package is not None:
+            raise ValueError("monorepo layout cannot declare python.package")
+
+        if not self.packages:
+            raise ValueError("monorepo layout requires python.packages")
+
+        if len(set(self.packages)) != len(self.packages):
+            raise ValueError("monorepo package paths must be unique")
+
+        for package_path in self.packages:
+            parts = package_path.split("/")
+
+            if (
+                not package_path
+                or "\\" in package_path
+                or package_path.startswith("/")
+                or any(part in {"", ".", ".."} for part in parts)
+            ):
+                raise ValueError(
+                    "monorepo package paths must be safe "
+                    f"repository-relative paths: {package_path!r}"
+                )
+
+        return self
 
 
 class JamManifest(BaseModel):

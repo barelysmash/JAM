@@ -194,3 +194,114 @@ jobs:
 
     assert report.passed is True
     assert any(check.name == "ci-workflow" and check.passed for check in report.checks)
+
+
+def _configure_monorepo(
+    repository: Path,
+    package_paths: tuple[str, ...],
+) -> None:
+    manifest = repository / "jam.yaml"
+    manifest_text = manifest.read_text(encoding="utf-8")
+
+    old_python_block = """python:
+  layout: "single-package"
+  package: "muse_demo"
+"""
+
+    package_lines = "\n".join(
+        f'    - "{package_path}"' for package_path in package_paths
+    )
+    new_python_block = f'python:\n  layout: "monorepo"\n  packages:\n{package_lines}\n'
+
+    if old_python_block not in manifest_text:
+        raise AssertionError("Generated single-package manifest block was not found.")
+
+    manifest.write_text(
+        manifest_text.replace(
+            old_python_block,
+            new_python_block,
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    (repository / "pyproject.toml").write_text(
+        """
+[tool.ruff]
+target-version = "py312"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    for package_path in package_paths:
+        package_directory = repository / package_path
+        package_directory.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+        (package_directory / "pyproject.toml").write_text(
+            """
+[project]
+name = "test-package"
+version = "0.1.0"
+""".strip()
+            + "\n",
+            encoding="utf-8",
+        )
+
+
+def test_validate_accepts_monorepo_layout(
+    tmp_path: Path,
+) -> None:
+    repository = _create_repository(tmp_path)
+
+    _configure_monorepo(
+        repository,
+        (
+            "packages/atlas-core",
+            "packages/atlas-events",
+            "apps/restaurantos",
+        ),
+    )
+
+    report = validate_repository(repository)
+
+    assert report.passed is True
+    assert any(
+        check.name == "python-configuration"
+        and check.passed
+        and "3 package(s)" in check.message
+        for check in report.checks
+    )
+
+
+def test_validate_detects_missing_monorepo_package_manifest(
+    tmp_path: Path,
+) -> None:
+    repository = _create_repository(tmp_path)
+
+    _configure_monorepo(
+        repository,
+        (
+            "packages/atlas-core",
+            "packages/atlas-events",
+        ),
+    )
+
+    missing = repository / "packages/atlas-events/pyproject.toml"
+    missing.unlink()
+
+    report = validate_repository(repository)
+
+    assert report.passed is False
+    assert any(
+        check.name == "python-configuration"
+        and not check.passed
+        and ("packages/atlas-events/pyproject.toml" in check.message)
+        for check in report.checks
+    )
