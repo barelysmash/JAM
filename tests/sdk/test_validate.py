@@ -121,3 +121,39 @@ def test_json_report_is_machine_readable(
 
     assert payload["passed"] is True
     assert payload["repository"] == str(repository.resolve())
+
+
+def test_validate_detects_missing_manifest(
+    tmp_path: Path,
+) -> None:
+    repository = _create_repository(tmp_path)
+    (repository / "jam.yaml").unlink()
+
+    report = validate_repository(repository)
+
+    assert report.passed is False
+    assert any(
+        check.name == "jam-manifest" and not check.passed for check in report.checks
+    )
+
+
+def test_validate_detects_manifest_role_mismatch(
+    tmp_path: Path,
+) -> None:
+    repository = _create_repository(tmp_path)
+    manifest = repository / "jam.yaml"
+    text = manifest.read_text(encoding="utf-8")
+    manifest.write_text(
+        text.replace(
+            "Creative Intelligence Engine",
+            "Market Intelligence Engine",
+        ),
+        encoding="utf-8",
+    )
+
+    report = validate_repository(repository)
+
+    assert report.passed is False
+    assert any(
+        check.name == "jam-manifest" and not check.passed for check in report.checks
+    )

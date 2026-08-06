@@ -8,10 +8,13 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Final
 
+from jam_sdk.manifest import ManifestError, load_manifest
+
 JAM_DECLARATION: Final[str] = "Built with JAM"
 TOKEN_PATTERN: Final[re.Pattern[str]] = re.compile(r"\{\{[A-Z0-9_]+\}\}")
 
 REQUIRED_FILES: Final[tuple[str, ...]] = (
+    "jam.yaml",
     "README.md",
     "pyproject.toml",
     ".github/workflows/ci.yml",
@@ -75,6 +78,7 @@ def validate_repository(repository: Path) -> ValidationReport:
         return _build_report(root, checks)
 
     checks.extend(_check_required_files(root))
+    checks.append(_check_manifest(root))
     checks.append(_check_readme_declaration(root))
     checks.append(_check_platform_role(root))
     checks.append(_check_python_configuration(root))
@@ -115,6 +119,39 @@ def _build_report(
         repository=str(root),
         passed=all(check.passed for check in checks),
         checks=tuple(checks),
+    )
+
+
+def _check_manifest(root: Path) -> ValidationCheck:
+    try:
+        manifest = load_manifest(root)
+    except ManifestError as exc:
+        return ValidationCheck(
+            name="jam-manifest",
+            passed=False,
+            message=str(exc),
+        )
+
+    readme = root / "README.md"
+
+    if readme.is_file():
+        readme_text = readme.read_text(encoding="utf-8")
+
+        if manifest.repository.role not in readme_text:
+            return ValidationCheck(
+                name="jam-manifest",
+                passed=False,
+                message=("manifest platform role does not match README"),
+            )
+
+    return ValidationCheck(
+        name="jam-manifest",
+        passed=True,
+        message=(
+            "manifest is valid: "
+            f"{manifest.repository.name} / "
+            f"{manifest.repository.role}"
+        ),
     )
 
 
