@@ -7,7 +7,10 @@ name = "barelysmash-jam-sdk"
 version = "0.1.0"
 description = "Tooling for creating JAM-conformant repositories."
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "pydantic>=2.12,<3",
+    "PyYAML>=6.0,<7",
+]
 
 
 [project.scripts]
@@ -15,6 +18,7 @@ jam = "jam_sdk.cli:main"
 
 [project.optional-dependencies]
 dev = [
+    "types-PyYAML>=6.0,<7",
     "mypy>=1.17,<2",
     "pytest>=8.4,<9",
     "pytest-cov>=6.2,<7",
