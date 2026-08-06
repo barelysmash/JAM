@@ -1,8 +1,10 @@
 from pathlib import Path
 
+import pytest
 from _pytest.capture import CaptureFixture
 from jam_sdk.cli import main
-from jam_sdk.init import initialize_repository
+from jam_sdk.init import InitError, initialize_repository
+from jam_sdk.manifest import load_manifest
 
 
 def _create_existing_repository(tmp_path: Path) -> Path:
@@ -181,3 +183,128 @@ def test_init_cli_dry_run_returns_success(
     assert exit_code == 0
     assert "DRY RUN" in captured.out
     assert not (repository / "jam.yaml").exists()
+
+
+def _create_existing_monorepo(
+    tmp_path: Path,
+) -> Path:
+    repository = _create_existing_repository(tmp_path)
+
+    for package_path in (
+        "packages/atlas-core",
+        "packages/atlas-events",
+        "apps/restaurantos",
+    ):
+        package_directory = repository / package_path
+        package_directory.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+        (package_directory / "pyproject.toml").write_text(
+            """
+[project]
+name = "atlas-package"
+version = "0.1.0"
+""".strip()
+            + "\n",
+            encoding="utf-8",
+        )
+
+    return repository
+
+
+def test_init_adopts_existing_monorepo(
+    tmp_path: Path,
+) -> None:
+    repository = _create_existing_monorepo(tmp_path)
+
+    report = initialize_repository(
+        repository,
+        project_name="Atlas",
+        package_name=None,
+        platform_role="Operational Intelligence Engine",
+        repository_type="engine",
+        scaffold_template="python-engine",
+        template_root=Path("templates"),
+        python_layout="monorepo",
+        package_paths=(
+            "packages/atlas-core",
+            "packages/atlas-events",
+            "apps/restaurantos",
+        ),
+        include_baseline=True,
+    )
+
+    manifest = load_manifest(repository)
+
+    assert report.passed is True
+    assert manifest.python.layout == "monorepo"
+    assert manifest.python.package is None
+    assert manifest.python.packages == (
+        "packages/atlas-core",
+        "packages/atlas-events",
+        "apps/restaurantos",
+    )
+
+
+def test_init_rejects_missing_monorepo_package(
+    tmp_path: Path,
+) -> None:
+    repository = _create_existing_repository(tmp_path)
+
+    with pytest.raises(
+        InitError,
+        match="missing package manifests",
+    ):
+        initialize_repository(
+            repository,
+            project_name="Atlas",
+            package_name=None,
+            platform_role="Operational Intelligence Engine",
+            repository_type="engine",
+            scaffold_template="python-engine",
+            template_root=Path("templates"),
+            python_layout="monorepo",
+            package_paths=("packages/missing",),
+        )
+
+    assert not (repository / "jam.yaml").exists()
+
+
+def test_init_cli_adopts_monorepo(
+    tmp_path: Path,
+    capsys: CaptureFixture[str],
+) -> None:
+    repository = _create_existing_monorepo(tmp_path)
+
+    exit_code = main(
+        [
+            "init",
+            str(repository),
+            "--name",
+            "Atlas",
+            "--role",
+            "Operational Intelligence Engine",
+            "--type",
+            "engine",
+            "--layout",
+            "monorepo",
+            "--package-path",
+            "packages/atlas-core",
+            "--package-path",
+            "packages/atlas-events",
+            "--package-path",
+            "apps/restaurantos",
+            "--baseline",
+            "--template-root",
+            "templates",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    manifest = load_manifest(repository)
+
+    assert exit_code == 0
+    assert "PASS" in captured.out
+    assert manifest.python.layout == "monorepo"
+    assert len(manifest.python.packages) == 3

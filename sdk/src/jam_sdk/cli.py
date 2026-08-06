@@ -81,8 +81,23 @@ def build_parser() -> argparse.ArgumentParser:
     init_parser.add_argument("--name", required=True)
     init_parser.add_argument(
         "--package",
-        required=True,
         dest="package_name",
+        help=("Python import package for a single-package repository."),
+    )
+    init_parser.add_argument(
+        "--layout",
+        choices=(
+            "single-package",
+            "monorepo",
+        ),
+        default="single-package",
+        dest="python_layout",
+    )
+    init_parser.add_argument(
+        "--package-path",
+        action="append",
+        dest="package_paths",
+        help=("Repository-relative package directory. Repeat for monorepos."),
     )
     init_parser.add_argument(
         "--role",
@@ -187,6 +202,8 @@ def main(argv: list[str] | None = None) -> int:
                 repository_type=args.repository_type,
                 scaffold_template=args.scaffold_template,
                 template_root=args.template_root,
+                python_layout=args.python_layout,
+                package_paths=tuple(args.package_paths or ()),
                 include_baseline=args.baseline,
                 dry_run=args.dry_run,
             )

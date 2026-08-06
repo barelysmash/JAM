@@ -26,6 +26,11 @@ RepositoryType = Literal[
     "orchestrator",
 ]
 
+PythonLayout = Literal[
+    "single-package",
+    "monorepo",
+]
+
 JAM_DECLARATION: Final[str] = "> Built with JAM — the JARVIS Architecture Manual."
 MANUAL_VERSION: Final[str] = "1.3.0"
 CONFORMANCE_VERSION: Final[str] = "1.0"
@@ -76,23 +81,34 @@ def initialize_repository(
     repository: Path,
     *,
     project_name: str,
-    package_name: str,
+    package_name: str | None,
     platform_role: str,
     repository_type: RepositoryType,
     scaffold_template: str,
     template_root: Path,
+    python_layout: PythonLayout = "single-package",
+    package_paths: tuple[str, ...] = (),
     include_baseline: bool = False,
     dry_run: bool = False,
 ) -> InitReport:
     """Add JAM metadata and safe baseline files to an existing repository."""
 
     root = repository.resolve()
+    try:
+        python_identity = PythonIdentity(
+            layout=python_layout,
+            package=package_name,
+            packages=package_paths,
+        )
+    except ValueError as exc:
+        raise InitError(f"Invalid Python configuration: {exc}") from exc
+
     _validate_inputs(
         root=root,
         project_name=project_name,
-        package_name=package_name,
         platform_role=platform_role,
         scaffold_template=scaffold_template,
+        python_identity=python_identity,
     )
 
     actions: list[InitAction] = []
@@ -112,7 +128,7 @@ def initialize_repository(
             template=scaffold_template,
             version=SCAFFOLD_VERSION,
         ),
-        python=PythonIdentity(package=package_name),
+        python=python_identity,
     )
 
     manifest_text: str = yaml.safe_dump(
@@ -152,7 +168,7 @@ def initialize_repository(
             root=root,
             replacements={
                 "{{PROJECT_NAME}}": project_name,
-                "{{PACKAGE_NAME}}": package_name,
+                "{{PACKAGE_NAME}}": package_name or project_name,
                 "{{PLATFORM_ROLE}}": platform_role,
             },
             dry_run=dry_run,
@@ -213,9 +229,9 @@ def _validate_inputs(
     *,
     root: Path,
     project_name: str,
-    package_name: str,
     platform_role: str,
     scaffold_template: str,
+    python_identity: PythonIdentity,
 ) -> None:
     if not root.is_dir():
         raise InitError(f"Repository directory does not exist: {root}")
@@ -229,11 +245,28 @@ def _validate_inputs(
     if not scaffold_template.strip():
         raise InitError("scaffold_template cannot be empty")
 
-    if not package_name.isidentifier():
-        raise InitError("package_name must be a valid Python identifier")
+    if python_identity.layout == "single-package":
+        package_name = python_identity.package
 
-    if package_name != package_name.lower():
-        raise InitError("package_name must be lowercase")
+        if package_name is None:
+            raise InitError("single-package layout requires --package")
+
+        if not package_name.isidentifier():
+            raise InitError("package_name must be a valid Python identifier")
+
+        if package_name != package_name.lower():
+            raise InitError("package_name must be lowercase")
+
+        return
+
+    missing_manifests = [
+        f"{package_path}/pyproject.toml"
+        for package_path in python_identity.packages
+        if not (root / package_path / "pyproject.toml").is_file()
+    ]
+
+    if missing_manifests:
+        raise InitError("missing package manifests: " + ", ".join(missing_manifests))
 
 
 def _create_text_file(
