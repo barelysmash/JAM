@@ -224,7 +224,9 @@ def _check_platform_role(root: Path) -> ValidationCheck:
     )
 
 
-def _check_python_configuration(root: Path) -> ValidationCheck:
+def _check_python_configuration(
+    root: Path,
+) -> ValidationCheck:
     path = root / "pyproject.toml"
 
     if not path.is_file():
@@ -234,22 +236,88 @@ def _check_python_configuration(root: Path) -> ValidationCheck:
             message="pyproject.toml is missing",
         )
 
-    text = path.read_text(encoding="utf-8")
+    try:
+        manifest = load_manifest(root)
+    except ManifestError as exc:
+        return ValidationCheck(
+            name="python-configuration",
+            passed=False,
+            message=(f"cannot determine Python layout: {exc}"),
+        )
+
+    root_text = path.read_text(encoding="utf-8")
+
+    if manifest.python.layout == "monorepo":
+        return _check_monorepo_python_configuration(
+            root,
+            root_text,
+            manifest.python.packages,
+        )
+
+    return _check_single_package_python_configuration(
+        root_text,
+    )
+
+
+def _check_single_package_python_configuration(
+    root_text: str,
+) -> ValidationCheck:
     required_markers = (
         "[project]",
         "[tool.ruff]",
         "[tool.mypy]",
         "[tool.pytest.ini_options]",
     )
-    missing = [marker for marker in required_markers if marker not in text]
+    missing = [marker for marker in required_markers if marker not in root_text]
 
     return ValidationCheck(
         name="python-configuration",
         passed=not missing,
         message=(
-            "required Python tooling is configured"
+            "single-package Python tooling is configured"
             if not missing
             else f"missing sections: {', '.join(missing)}"
+        ),
+    )
+
+
+def _check_monorepo_python_configuration(
+    root: Path,
+    root_text: str,
+    package_paths: tuple[str, ...],
+) -> ValidationCheck:
+    missing_root_markers = [
+        marker
+        for marker in (
+            "[tool.ruff]",
+            "[tool.mypy]",
+        )
+        if marker not in root_text
+    ]
+
+    missing_package_files = [
+        f"{package_path}/pyproject.toml"
+        for package_path in package_paths
+        if not (root / package_path / "pyproject.toml").is_file()
+    ]
+
+    problems: list[str] = []
+
+    if missing_root_markers:
+        problems.append("missing root sections: " + ", ".join(missing_root_markers))
+
+    if missing_package_files:
+        problems.append(
+            "missing package manifests: " + ", ".join(missing_package_files)
+        )
+
+    return ValidationCheck(
+        name="python-configuration",
+        passed=not problems,
+        message=(
+            f"monorepo Python tooling is configured for {len(package_paths)} package(s)"
+            if not problems
+            else "; ".join(problems)
         ),
     )
 
