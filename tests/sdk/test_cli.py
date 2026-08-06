@@ -179,3 +179,86 @@ def test_validate_command_supports_json(
 
     assert exit_code == 1
     assert payload["passed"] is False
+
+
+def test_doctor_command_reports_valid_repository(
+    tmp_path: Path,
+    capsys: CaptureFixture[str],
+) -> None:
+    destination = tmp_path / "doctor-demo"
+
+    assert (
+        main(
+            [
+                "new",
+                "Doctor Demo",
+                "--package",
+                "doctor_demo",
+                "--role",
+                "Test Intelligence Engine",
+                "--destination",
+                str(destination),
+                "--template-root",
+                "templates",
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    exit_code = main(
+        [
+            "doctor",
+            str(destination),
+            "--template-root",
+            "templates",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "PASS" in captured.out
+
+
+def test_doctor_command_fixes_missing_workflow(
+    tmp_path: Path,
+    capsys: CaptureFixture[str],
+) -> None:
+    destination = tmp_path / "doctor-fix-demo"
+
+    assert (
+        main(
+            [
+                "new",
+                "Doctor Fix Demo",
+                "--package",
+                "doctor_fix_demo",
+                "--role",
+                "Test Intelligence Engine",
+                "--destination",
+                str(destination),
+                "--template-root",
+                "templates",
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    workflow = destination / ".github/workflows/ci.yml"
+    workflow.unlink()
+
+    exit_code = main(
+        [
+            "doctor",
+            str(destination),
+            "--fix",
+            "--template-root",
+            "templates",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert workflow.is_file()
+    assert "restored from scaffold" in captured.out
