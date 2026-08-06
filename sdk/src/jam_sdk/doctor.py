@@ -9,7 +9,11 @@ from shutil import copy2
 from typing import Final
 
 from jam_sdk.manifest import ManifestError, load_manifest
-from jam_sdk.validate import ValidationReport, validate_repository
+from jam_sdk.validate import (
+    ValidationReport,
+    check_ci_workflows,
+    validate_repository,
+)
 
 REPAIRABLE_FILES: Final[tuple[str, ...]] = (
     ".github/workflows/ci.yml",
@@ -67,6 +71,12 @@ def doctor_repository(
         manifest = None
 
     for relative_path in REPAIRABLE_FILES:
+        if (
+            relative_path == ".github/workflows/ci.yml"
+            and check_ci_workflows(root).passed
+        ):
+            continue
+
         destination = root / relative_path
 
         if destination.exists():

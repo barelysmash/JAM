@@ -50,13 +50,13 @@ def test_validate_detects_missing_required_file(
     tmp_path: Path,
 ) -> None:
     repository = _create_repository(tmp_path)
-    (repository / ".github/workflows/ci.yml").unlink()
+    (repository / "README.md").unlink()
 
     report = validate_repository(repository)
 
     assert report.passed is False
     assert any(
-        check.name == "required-file:.github/workflows/ci.yml" and not check.passed
+        check.name == "required-file:README.md" and not check.passed
         for check in report.checks
     )
 
@@ -157,3 +157,40 @@ def test_validate_detects_manifest_role_mismatch(
     assert any(
         check.name == "jam-manifest" and not check.passed for check in report.checks
     )
+
+
+def test_validate_accepts_split_workflows(
+    tmp_path: Path,
+) -> None:
+    repository = _create_repository(tmp_path)
+    workflow_directory = repository / ".github/workflows"
+    (workflow_directory / "ci.yml").unlink()
+
+    (workflow_directory / "lint.yml").write_text(
+        """
+name: Lint
+jobs:
+  lint:
+    steps:
+      - run: python -m ruff check .
+      - run: python -m mypy
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    (workflow_directory / "tests.yaml").write_text(
+        """
+name: Tests
+jobs:
+  tests:
+    steps:
+      - run: python -m pytest
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    report = validate_repository(repository)
+
+    assert report.passed is True
+    assert any(check.name == "ci-workflow" and check.passed for check in report.checks)

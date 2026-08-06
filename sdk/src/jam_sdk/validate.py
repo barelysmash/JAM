@@ -17,7 +17,6 @@ REQUIRED_FILES: Final[tuple[str, ...]] = (
     "jam.yaml",
     "README.md",
     "pyproject.toml",
-    ".github/workflows/ci.yml",
     "docs/adr/ADR-0001-repository-role.md",
 )
 
@@ -82,7 +81,7 @@ def validate_repository(repository: Path) -> ValidationReport:
     checks.append(_check_readme_declaration(root))
     checks.append(_check_platform_role(root))
     checks.append(_check_python_configuration(root))
-    checks.append(_check_ci_workflow(root))
+    checks.append(check_ci_workflows(root))
     checks.append(_check_repository_role_adr(root))
     checks.append(_check_unresolved_tokens(root))
 
@@ -255,17 +254,42 @@ def _check_python_configuration(root: Path) -> ValidationCheck:
     )
 
 
-def _check_ci_workflow(root: Path) -> ValidationCheck:
-    path = root / ".github/workflows/ci.yml"
+def discover_workflow_files(root: Path) -> tuple[Path, ...]:
+    """Discover GitHub Actions workflow files."""
 
-    if not path.is_file():
+    directory = root / ".github/workflows"
+
+    if not directory.is_dir():
+        return ()
+
+    workflows = {
+        path
+        for pattern in ("*.yml", "*.yaml")
+        for path in directory.glob(pattern)
+        if path.is_file()
+    }
+
+    return tuple(
+        sorted(
+            workflows,
+            key=lambda path: path.as_posix(),
+        )
+    )
+
+
+def check_ci_workflows(root: Path) -> ValidationCheck:
+    """Check required commands across all workflow files."""
+
+    workflows = discover_workflow_files(root)
+
+    if not workflows:
         return ValidationCheck(
             name="ci-workflow",
             passed=False,
-            message="CI workflow is missing",
+            message="CI workflows are missing",
         )
 
-    text = path.read_text(encoding="utf-8")
+    text = "\n".join(path.read_text(encoding="utf-8") for path in workflows)
     required_commands = (
         "ruff check",
         "mypy",
@@ -277,9 +301,9 @@ def _check_ci_workflow(root: Path) -> ValidationCheck:
         name="ci-workflow",
         passed=not missing,
         message=(
-            "CI runs Ruff, mypy, and pytest"
+            f"CI runs Ruff, mypy, and pytest across {len(workflows)} workflow file(s)"
             if not missing
-            else f"CI is missing: {', '.join(missing)}"
+            else f"CI workflows are missing: {', '.join(missing)}"
         ),
     )
 
