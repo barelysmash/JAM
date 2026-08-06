@@ -6,6 +6,10 @@ import argparse
 from pathlib import Path
 from typing import Final
 
+from jam_sdk.doctor import (
+    doctor_repository,
+    format_doctor_report,
+)
 from jam_sdk.scaffold import (
     ScaffoldError,
     ScaffoldRequest,
@@ -83,6 +87,35 @@ def build_parser() -> argparse.ArgumentParser:
         help="Emit machine-readable JSON.",
     )
 
+    doctor_parser = subcommands.add_parser(
+        "doctor",
+        help="Diagnose and repair safe JAM conformance issues.",
+    )
+    doctor_parser.add_argument(
+        "repository",
+        nargs="?",
+        type=Path,
+        default=Path.cwd(),
+        help="Repository to diagnose. Defaults to the current directory.",
+    )
+    doctor_parser.add_argument(
+        "--fix",
+        action="store_true",
+        help="Apply deterministic repairs.",
+    )
+    doctor_parser.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+        help="Emit machine-readable JSON.",
+    )
+    doctor_parser.add_argument(
+        "--template-root",
+        type=Path,
+        default=DEFAULT_TEMPLATE_ROOT,
+        help=argparse.SUPPRESS,
+    )
+
     return parser
 
 
@@ -92,12 +125,28 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
 
     if args.command == "validate":
-        report = validate_repository(args.repository)
+        validation_report = validate_repository(args.repository)
         output = (
-            report.to_json() if args.json_output else format_validation_report(report)
+            validation_report.to_json()
+            if args.json_output
+            else format_validation_report(validation_report)
         )
         print(output)
-        return 0 if report.passed else 1
+        return 0 if validation_report.passed else 1
+
+    if args.command == "doctor":
+        doctor_report = doctor_repository(
+            args.repository,
+            template_root=args.template_root,
+            fix=args.fix,
+        )
+        output = (
+            doctor_report.to_json()
+            if args.json_output
+            else format_doctor_report(doctor_report)
+        )
+        print(output)
+        return 0 if doctor_report.passed else 1
 
     if args.command != "new":
         return 2
