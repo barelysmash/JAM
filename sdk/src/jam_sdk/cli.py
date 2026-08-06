@@ -11,6 +11,10 @@ from jam_sdk.scaffold import (
     ScaffoldRequest,
     scaffold_python_engine,
 )
+from jam_sdk.validate import (
+    format_validation_report,
+    validate_repository,
+)
 
 DEFAULT_TEMPLATE_ROOT: Final[Path] = Path(__file__).resolve().parents[3] / "templates"
 
@@ -61,6 +65,24 @@ def build_parser() -> argparse.ArgumentParser:
         help=argparse.SUPPRESS,
     )
 
+    validate_parser = subcommands.add_parser(
+        "validate",
+        help="Validate a repository against JAM requirements.",
+    )
+    validate_parser.add_argument(
+        "repository",
+        nargs="?",
+        type=Path,
+        default=Path.cwd(),
+        help="Repository to validate. Defaults to the current directory.",
+    )
+    validate_parser.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+        help="Emit machine-readable JSON.",
+    )
+
     return parser
 
 
@@ -68,6 +90,14 @@ def main(argv: list[str] | None = None) -> int:
     """Run the JAM command-line interface."""
 
     args = build_parser().parse_args(argv)
+
+    if args.command == "validate":
+        report = validate_repository(args.repository)
+        output = (
+            report.to_json() if args.json_output else format_validation_report(report)
+        )
+        print(output)
+        return 0 if report.passed else 1
 
     if args.command != "new":
         return 2
