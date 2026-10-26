@@ -48,7 +48,8 @@ JARVIS agent registry (`config/agents.yaml` in jarvis-v2). Nothing is
 added directly to JARVIS itself. The registry supports two transports:
 in-process adapters wrapping peer HTTP services, and MCP stdio servers
 launched as child processes. Each entry loads independently; one
-agent's failure never blocks the rest.
+agent's failure never blocks the rest. The mechanics are the
+[Agent Registration](../standards/agent-registration.md) standard.
 
 ---
 

@@ -26,6 +26,9 @@ recorded in that repository, with a reason.
 | [Testing Standards](testing.md) | What must be tested, and to what depth | CI |
 | [Prompt Standards](prompt.md) | How prompts are written, versioned, and validated | CI |
 | [Unattended Automation](unattended-automation.md) | Scheduled jobs, propagation, run-to-green: what a loop may do without a person | Tooling and convention |
+| [Deployment](deployment.md) | Host model, release layout, install/swap/rollback, one deploy command | Tooling and convention |
+| [Secrets](secrets.md) | Where credentials and private state live, and where they never are | Tooling and convention |
+| [Agent Registration](agent-registration.md) | How an engine or utility agent becomes routable by JARVIS | Tooling and convention |
 
 ---
 

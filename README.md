@@ -57,6 +57,9 @@ How we build.
 - [Testing Standards](standards/testing.md)
 - [Prompt Standards](standards/prompt.md)
 - [Unattended Automation](standards/unattended-automation.md)
+- [Deployment](standards/deployment.md)
+- [Secrets](standards/secrets.md)
+- [Agent Registration](standards/agent-registration.md)
 
 ## Reference
 
