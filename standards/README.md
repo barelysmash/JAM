@@ -25,6 +25,7 @@ recorded in that repository, with a reason.
 | [Python Standards](python.md) | Language version, tooling, typing, project layout | Tooling |
 | [Testing Standards](testing.md) | What must be tested, and to what depth | CI |
 | [Prompt Standards](prompt.md) | How prompts are written, versioned, and validated | CI |
+| [Unattended Automation](unattended-automation.md) | Scheduled jobs, propagation, run-to-green: what a loop may do without a person | Tooling and convention |
 
 ---
 

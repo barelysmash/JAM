@@ -68,8 +68,28 @@ Responsibilities
 - Schedule work
 - Aggregate decisions
 - Present executive briefings
+- Run the platform's unattended loops
 
 JARVIS never owns domain-specific reasoning.
+
+### Unattended loops
+
+JARVIS is also where the platform's scheduled, person-free work runs
+(`config/routines.yaml` in jarvis-v2, realised as timers on the host):
+
+- **Conformance sweep** — clone every conforming repository, run
+  `jam validate`, diff against the previous sweep, report drift. Read-only.
+- **Contract propagation** — when JAM tags a release, prepare the adoption
+  branch (`jam.yaml` pin, re-vendored schemas) in every repository behind
+  it, and stop before push.
+- **Run-to-green** — iterate on one repository until a declared condition
+  command exits 0, then hand off a branch and a patch.
+- **Backlog drain** — run the next eligible goal from a committed backlog,
+  one per fire, and tick its task line on success.
+
+Every loop consumes JAM and never changes it; every loop stops before
+anything a person would want to review. The rails are the
+[Unattended Automation](../standards/unattended-automation.md) standard.
 
 ---
 

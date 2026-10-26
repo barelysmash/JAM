@@ -96,6 +96,13 @@ including:
 
 Prefer tooling to CI, and CI to convention.
 
+Across repositories, JARVIS's conformance sweep runs `jam validate` against
+every conforming repository on a schedule and reports drift between runs —
+a check that went green to red, a check the SDK added or dropped — as an
+event. It reports; it never changes a repository. When JAM tags a release,
+the same run prepares each behind repository's adoption branch and stops
+there (see [Unattended Automation](unattended-automation.md)).
+
 ---
 
 BarelySmash
