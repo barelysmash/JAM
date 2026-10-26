@@ -56,6 +56,7 @@ How we build.
 - [Python Standards](standards/python.md)
 - [Testing Standards](standards/testing.md)
 - [Prompt Standards](standards/prompt.md)
+- [Unattended Automation](standards/unattended-automation.md)
 
 ## Reference
 
