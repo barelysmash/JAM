@@ -32,7 +32,7 @@ PythonLayout = Literal[
 ]
 
 JAM_DECLARATION: Final[str] = "> Built with JAM — the JARVIS Architecture Manual."
-MANUAL_VERSION: Final[str] = "1.3.0"
+MANUAL_VERSION: Final[str] = "1.4.0"
 CONFORMANCE_VERSION: Final[str] = "1.0"
 SCAFFOLD_VERSION: Final[str] = "1.0.0"
 
